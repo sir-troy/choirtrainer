@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://choirtrainer.useful-indeed.com/sitemap.xml

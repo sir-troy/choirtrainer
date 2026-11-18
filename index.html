@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choir Voice Trainer</title>
+<meta name="description" content="Choir Voice Trainer — find your voice type, sing in tune with live pitch feedback, read the grand staff and practise SATB parts. Free, runs in your browser.">
+<link rel="canonical" href="https://choirtrainer.useful-indeed.com/">
+<meta property="og:title" content="Choir Voice Trainer">
+<meta property="og:description" content="Find your voice type, sing in tune and read the grand staff. Free, runs in your browser.">
+<meta property="og:url" content="https://choirtrainer.useful-indeed.com/">
+<link rel="stylesheet" href="useful-indeed/footer.css">
+<script src="version-log.js"></script>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="logo.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600;700&family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a landing stage with a cartoon choir in white robes, then a journey road; inside each activity one big step at a time, with your own choir member reacting to your voice beside a live grand staff. Single light theme by choice for maximum contrast. */
+:root{
+  --bg:#111a30; --bg2:#0c1326; --card:#1a2442; --ink:#eef2ff; --muted:#a9b4d2; --line:#2f3b60;
+  --accent:#5b8cff; --accent-soft:#223163; --sing:#ff8a2a; --sing-soft:#3b2a1a;
+  --good:#34d399; --good-soft:#123629; --bad:#ff6b7d; --gold:#f7c948; --night:#1b2550;
+  --paper:#fffdf7; --pink:#14203a; --pmuted:#5a6680; --pgood:#11804d; --psing:#e06a00;
+  --font:"Atkinson Hyperlegible", "Segoe UI", Verdana, system-ui, sans-serif;
+  --fun:"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --music:"Noto Music", "Bravura Text", "Segoe UI Symbol", "Apple Symbols", serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font-size:20px;-webkit-text-size-adjust:100%}
+body{margin:0;background:radial-gradient(900px 500px at 15% -5%, #22306a 0%, transparent 60%),radial-gradient(800px 500px at 100% 10%, #2b1f55 0%, transparent 55%),var(--bg);background-attachment:fixed;color:var(--ink);font-family:var(--font);line-height:1.5;overflow-x:hidden}
+button,select{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance;font-family:var(--fun);font-weight:600}
+p{margin:0}
+:focus-visible{outline:4px solid var(--sing);outline-offset:3px}
+#bgfx,#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#bgfx{z-index:0}
+#fx{z-index:60}
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:10px 16px 130px}
+.ic{width:1.2em;height:1.2em;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.22em;flex:0 0 auto}
+/* Header */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 0 14px}
+.brand{display:flex;gap:12px;align-items:center;background:none;border:0;cursor:pointer;padding:0;text-align:left}
+.logo{width:58px;height:58px;display:grid;place-items:center;flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(91,140,255,.35))}
+.logo svg{width:58px;height:58px}
+.brand h1{font-size:1.35rem}
+.brand small{display:block;color:var(--muted);font-size:.8rem}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:99px;background:var(--card);border:2px solid var(--line);font-weight:700;font-size:.85rem;cursor:pointer}
+.chip.on{border-color:var(--good);color:var(--good)}
+.chip.on .dot{width:10px;height:10px;border-radius:50%;background:var(--good);animation:ping 1.6s ease-out infinite}
+.chip.off{border-color:var(--bad);color:var(--bad)}
+/* Buttons */
+.btn{color:var(--ink);position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:10px 22px;border-radius:18px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:1rem;cursor:pointer;text-align:center;box-shadow:0 3px 0 var(--line);transition:transform .08s, box-shadow .08s, border-color .15s;-webkit-tap-highlight-color:transparent}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--line)}
+.btn.primary{background:#3d6fe8;border-color:#3d6fe8;color:#fff;box-shadow:0 4px 0 #1e3f99}
+.btn.good{background:#13935a;border-color:#13935a;color:#fff;box-shadow:0 4px 0 #0a5534}
+.btn.sing{background:#e2690c;border-color:#e2690c;color:#fff;box-shadow:0 4px 0 #8c3f00}
+.btn.sing.live{animation:glow 1.4s ease-in-out infinite}
+.btn.big{min-height:68px;font-size:1.1rem;padding:12px 26px}
+.btn.huge{min-height:78px;font-size:1.35rem;padding:14px 34px;border-radius:24px;font-family:var(--fun)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn .rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);animation:rip .55s ease-out forwards;pointer-events:none}
+.btnrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.card{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 14px 34px rgba(0,0,0,.28)}
+.stack{display:flex;flex-direction:column;gap:18px}
+.center{text-align:center}
+.muted{color:var(--muted)}
+.lead{font-size:1.15rem}
+.huge{font-size:2.4rem;font-weight:700;line-height:1.1;font-family:var(--fun)}
+.notice{border-radius:16px;padding:16px 18px;background:var(--sing-soft);border:2px solid var(--sing);font-weight:700}
+.notice.blue{background:var(--accent-soft);border-color:var(--accent)}
+.notice.green{background:var(--good-soft);border-color:var(--good)}
+.tips{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.tips li{display:flex;gap:14px;align-items:center;font-size:1.05rem;background:var(--bg2);border-radius:16px;padding:12px 14px;animation:fadeUp .45s both}
+.tips li:nth-child(2){animation-delay:.08s}.tips li:nth-child(3){animation-delay:.16s}.tips li:nth-child(4){animation-delay:.24s}
+.tips .ti{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:0 0 auto;font-size:1.3rem}
+.miniprog{height:12px;border-radius:99px;background:var(--bg2);overflow:hidden;border:2px solid var(--line)}
+.miniprog>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#5d8bf0);transition:width .5s}
+/* Landing */
+.landing{display:flex;flex-direction:column;gap:26px}
+.lhero{position:relative;border-radius:32px;overflow:hidden;background:linear-gradient(180deg,#1b2550 0%,#2b3a7a 55%,#3a4c96 100%);color:#fff;padding:28px 22px 0;box-shadow:0 18px 40px rgba(27,37,80,.35)}
+.lhero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 110%, rgba(255,214,102,.45), transparent 60%);pointer-events:none}
+.ltext{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:720px;margin:0 auto}
+.eyebrow{display:inline-block;padding:6px 14px;border-radius:99px;background:rgba(255,255,255,.14);font-weight:700;font-size:.85rem;letter-spacing:.04em}
+.ltitle{font-size:clamp(2rem,6vw,3.2rem);font-weight:700;line-height:1.05}
+.ltitle span{color:#ffd166}
+.ltext p{font-size:1.1rem;color:#dfe6ff;max-width:56ch}
+.stage{position:relative;margin-top:18px;padding-bottom:10px}
+.row{display:flex;justify-content:center;gap:2%;position:relative;isolation:isolate;padding:0 3%}
+.row:after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,#8a5d33,#5c3d22);border-radius:22px 22px 0 0;z-index:-1;box-shadow:inset 0 4px 0 rgba(255,255,255,.18)}
+.row.back{padding:0 10%}
+.row.back:after{left:8%;right:8%;background:linear-gradient(180deg,#6f4a29,#4a321c)}
+.row.front{margin-top:-4px}
+.singer{background:none;border:0;padding:0 0 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;width:clamp(62px,17vw,112px);-webkit-tap-highlight-color:transparent;position:relative}
+.row.back .singer{width:clamp(56px,15vw,96px)}
+.singer .kid{width:100%;height:auto}
+.singer .tag{margin-top:-6px;padding:2px 10px;border-radius:99px;background:#fff;color:#14203a;font-weight:700;font-size:.75rem;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);position:relative;z-index:3}
+.singer .tag b{color:var(--sing)}
+.tapline{position:relative;text-align:center;color:#ffe7a8;font-weight:700;padding:6px 0 14px;font-size:.95rem}
+.lctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn.ghostw{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.4);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.feat .card{display:flex;flex-direction:column;gap:8px;animation:fadeUp .5s both}
+.feat .card:nth-child(2){animation-delay:.08s}.feat .card:nth-child(3){animation-delay:.16s}.feat .card:nth-child(4){animation-delay:.24s}
+.feat .fi{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;font-size:1.4rem}
+.feat h3{font-size:1.15rem}
+.feat p{color:var(--muted);font-size:.95rem}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.how div{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px}
+.how b.n{width:44px;height:44px;border-radius:50%;background:var(--sing);color:#fff;display:grid;place-items:center;font-family:var(--fun);font-size:1.3rem;flex:0 0 auto}
+.secttl{font-size:1.6rem;text-align:center}
+/* Home */
+.hero{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-bottom:18px}
+.hero h2{font-size:2rem}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.stat{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:8px 14px;font-weight:700}
+.stat b{font-family:var(--fun);font-size:1.3rem}
+.stat .ic{width:1.4em;height:1.4em}
+.stat.star{color:var(--gold)} .stat.done{color:var(--good)}
+.prog{height:16px;border-radius:99px;background:var(--card);border:2px solid var(--line);overflow:hidden;margin-top:12px}
+.prog>div{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--good),#3cc88a);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.bubble{position:relative;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:10px 14px;font-weight:700;font-family:var(--fun);max-width:220px;margin-bottom:4px;animation:fadeUp .6s .3s both;text-align:center}
+.bubble:after{content:"";position:absolute;left:50%;margin-left:-8px;bottom:-10px;width:16px;height:16px;background:var(--card);border-right:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg)}
+.hero-kid{display:flex;flex-direction:column;align-items:center}
+.hero-kid .kid{width:118px;height:auto}
+.road{position:relative;display:flex;flex-direction:column;gap:14px;padding-left:34px}
+.road:before{content:"";position:absolute;left:31px;top:20px;bottom:20px;border-left:6px dotted var(--line)}
+.stop{position:relative;animation:fadeUp .5s both}
+.node{position:absolute;left:-34px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:var(--card);border:4px solid var(--line);display:grid;place-items:center;font-weight:700;font-family:var(--fun);z-index:1}
+.stop.done .node{background:var(--good);border-color:var(--good);color:#fff}
+.stop.next .node{border-color:var(--accent);color:var(--accent);animation:ring 1.8s infinite}
+.stepcard{display:grid;grid-template-columns:60px 1fr auto;gap:16px;align-items:center;text-align:left;width:100%;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:14px 18px 14px 26px;cursor:pointer;transition:transform .15s, box-shadow .15s, border-color .15s}
+.stepcard:hover{transform:translateX(4px);border-color:var(--accent);box-shadow:0 8px 22px rgba(29,79,184,.14)}
+.stop.next .stepcard{border-color:var(--accent);box-shadow:0 8px 22px rgba(29,79,184,.14)}
+.aicon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;color:#fff;font-size:1.5rem;flex:0 0 auto}
+.stepcard h3{font-size:1.2rem}
+.stepcard p{color:var(--muted);font-size:.9rem}
+.stepcard .go{font-weight:700;color:var(--accent);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.minis{display:flex;gap:2px;color:var(--line)}
+.minis .on{color:var(--gold)}
+.minis .ic{width:1em;height:1em}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:22px}
+.settings label{font-weight:700;display:block;margin-bottom:6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{min-height:52px;padding:8px 16px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;transition:background .15s, color .15s}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+select.big option{background:#1a2442;color:#eef2ff}
+select.big{min-height:56px;padding:8px 12px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:700;width:100%}
+/* Wizard */
+.wizhead{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.wizhead .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.wizhead h2{font-size:1.6rem;display:flex;gap:12px;align-items:center}
+.wizhead h2 .aicon{width:48px;height:48px;border-radius:15px;font-size:1.2rem}
+.dots{display:flex;gap:6px}
+.dots span{height:12px;flex:1;border-radius:99px;background:var(--line);position:relative;overflow:hidden}
+.dots span.past{background:var(--good)}
+.dots span.now{background:var(--accent-soft)}
+.dots span.now:after{content:"";position:absolute;inset:0;background:var(--accent);animation:fillbar .6s ease-out forwards;transform-origin:left}
+.stepnum{font-weight:700;color:var(--accent);font-family:var(--fun);font-size:1.1rem}
+.steptitle{font-size:1.5rem}
+.stepcardx{animation:slideIn .45s cubic-bezier(.2,.8,.2,1) both}
+.wizfoot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb, var(--bg) 90%, transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:2px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.wizfoot .in{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;gap:12px}
+.wizfoot .btn{flex:1;max-width:320px}
+/* Staff */
+.staffbox{position:relative;background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg.staff{display:block;margin:0 auto;width:100%;height:auto;max-width:760px;min-width:300px;overflow:visible}
+svg.staff .ln{stroke:var(--pink);stroke-width:1.4}
+svg.staff .ledger{stroke:var(--pink);stroke-width:1.6}
+svg.staff .clef{font-family:var(--music);fill:var(--pink)}
+svg.staff .acc{font-family:var(--music);fill:var(--pink);font-size:30px}
+svg.staff .nacc{font-family:var(--music);font-size:28px;fill:var(--pink)}
+svg.staff .nh{fill:var(--pink);transform-box:fill-box;transform-origin:center;transition:fill .2s}
+svg.staff .nh.me{fill:var(--psing)}
+svg.staff .lyric{font-family:var(--fun);font-weight:600;font-size:25px;fill:var(--pink);text-anchor:middle;transition:fill .2s}
+svg.staff .top{font-family:var(--font);font-weight:700;font-size:15px;fill:var(--pmuted);text-anchor:middle}
+svg.staff .tag{font-family:var(--font);font-weight:700;font-size:14px;fill:var(--pmuted)}
+svg.staff .tag.me{fill:var(--psing)}
+svg.staff .partlbl{font-family:var(--font);font-weight:700;font-size:13px;fill:var(--pmuted)}
+svg.staff .col{animation:noteIn .5s both}
+svg.staff .hl{fill:#ffead6;opacity:0;transition:opacity .25s}
+svg.staff .col.cur .hl{opacity:1}
+svg.staff .col.cur .nh{fill:var(--psing);animation:pulse 1s ease-in-out infinite}
+svg.staff .col.cur .lyric{fill:var(--psing)}
+svg.staff .col.hit .nh, svg.staff .col.hit .lyric{fill:var(--pgood)}
+svg.staff .col.hit .nh{animation:pop .5s}
+svg.staff .col.miss .nh, svg.staff .col.miss .lyric{fill:#c0392b}
+svg.staff .col.miss{animation:shake .45s}
+svg.staff .live circle{fill:var(--psing)}
+svg.staff .live .halo{opacity:.25;transform-box:fill-box;transform-origin:center;animation:halo 1.2s ease-out infinite}
+svg.staff .live text{font-family:var(--font);font-weight:700;font-size:13px;fill:var(--psing);text-anchor:middle}
+svg.staff .live.ok circle{fill:var(--pgood)}
+svg.staff .live.ok text{fill:var(--pgood)}
+svg.staff .trail{fill:none;stroke:var(--psing);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:.45}
+svg.staff .trail.ok{stroke:var(--pgood)}
+/* Choir members (adults in ivory robes) */
+.kid{overflow:visible;display:block}
+.kid .k-robe{fill:#f4efe3;stroke:#c2b79f;stroke-width:1.5;stroke-linejoin:round}
+.kid .k-pleat{stroke:#dcd2bb;stroke-width:1.3;fill:none;stroke-linecap:round}
+.kid .k-binder{fill:#fbfaf6;stroke:#b9b2a2;stroke-width:1.4}
+.kid .k-spine{fill:#e7e2d6}
+.kid .k-lines{fill:none;stroke:rgba(110,60,40,.45);stroke-width:.9;stroke-linecap:round}
+.kid .k-nose{fill:none;stroke:rgba(0,0,0,.28);stroke-width:1.3;stroke-linecap:round}
+.kid .k-brow,.kid .k-sad{fill:none;stroke-width:1.9;stroke-linecap:round}
+.kid .k-eyes{fill:#1a1a2e;transform-box:fill-box;transform-origin:center;animation:blink 4.2s infinite}
+.kid .k-shine{fill:#fff}
+.kid .k-happy,.kid .k-smile,.kid .k-frown{fill:none;stroke:#4a2323;stroke-width:1.8;stroke-linecap:round}
+.kid .k-cheek{fill:#ff8fa3;opacity:.3;transition:opacity .2s}
+.kid .k-mouth{fill:#6b1c27}
+.kid .k-glow{fill:#3fd18b;opacity:0;transition:opacity .3s}
+.kid .k-happy,.kid .k-frown,.kid .k-sad,.kid .k-mouth,.kid .k-cheer{display:none}
+.kid .k-sway{transform-box:view-box;transform-origin:60px 198px;animation:sway 4.5s ease-in-out infinite}
+.kid .k-head{transform-box:view-box;transform-origin:60px 62px}
+.kid .k-note{font-family:var(--music);fill:var(--gold);font-size:16px;opacity:0}
+.kid.singing .k-mouth{display:inline}
+.kid.singing .k-smile{display:none}
+.kid.singing .k-head{animation:headbob .8s ease-in-out infinite}
+.kid.singing .k-note{animation:noteFly 1.6s ease-out infinite}
+.kid.singing .k-note.n2{animation-delay:.8s}
+.kid.ok .k-glow{opacity:.2}
+.kid.ok .k-cheek{opacity:.7}
+.kid.ok .k-eyes{display:none}
+.kid.ok .k-happy{display:inline}
+.kid.yay{animation:jump .8s}
+.kid.yay .k-cheer,.kid.yay .k-happy{display:inline}
+.kid.yay .k-hold,.kid.yay .k-eyes{display:none}
+.kid.oops .k-sad,.kid.oops .k-frown{display:inline}
+.kid.oops .k-brow,.kid.oops .k-smile,.kid.oops .k-mouth{display:none}
+.kid.oops .k-head{animation:shake .5s}
+.kid.face{overflow:hidden}
+.kid.face .k-sway{animation:none}
+.kid.face .k-note,.kid.face .k-glow{display:none}
+/* Setup page */
+.setup{display:flex;flex-direction:column;gap:18px}
+.sethead{display:flex;flex-direction:column;gap:6px;animation:fadeUp .5s both}
+.sethead h2{font-size:2.1rem}
+.setcard{animation:fadeUp .5s both}
+.setcard:nth-of-type(2){animation-delay:.08s}.setcard:nth-of-type(3){animation-delay:.16s}
+.setcard h3{font-size:1.35rem;display:flex;align-items:center;gap:10px}
+.stepn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e2690c;color:#fff;font-size:1.05rem;flex:0 0 auto}
+.charpick{display:grid;grid-template-columns:240px 1fr;gap:18px;align-items:stretch}
+.preview{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;background:radial-gradient(circle at 50% 30%, #34468a, #141c38 75%);border:2px solid var(--line);border-radius:24px;padding:16px 10px 14px;overflow:hidden}
+.preview:before{content:"";position:absolute;left:10%;right:10%;bottom:44px;height:18px;border-radius:50%;background:rgba(0,0,0,.35);filter:blur(4px)}
+.preview .kid{position:relative;width:150px;height:auto}
+.preview b{font-family:var(--fun);font-size:1.5rem;position:relative}
+.preview span{color:var(--muted);font-weight:700;position:relative}
+.chargrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.charbtn{background:var(--bg2);border:2px solid var(--line);border-radius:18px;padding:8px 4px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:0;color:var(--ink);transition:transform .15s, border-color .15s;-webkit-tap-highlight-color:transparent}
+.charbtn:hover{transform:translateY(-3px);border-color:var(--accent)}
+.charbtn .kid{width:72%;height:auto}
+.charbtn b{font-size:.92rem;font-family:var(--fun)}
+.charbtn small{font-size:.72rem;color:var(--muted);font-weight:700}
+.charbtn[aria-pressed="true"]{border-color:var(--sing);box-shadow:0 0 0 4px var(--sing-soft);background:#2a2240}
+.partgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.partbtn{background:var(--bg2);border:2px solid var(--line);border-radius:16px;padding:10px 14px;cursor:pointer;text-align:left;color:var(--ink);display:flex;flex-direction:column}
+.partbtn b{font-size:1rem}
+.partbtn small{color:var(--muted);font-weight:700}
+.partbtn.find{grid-column:1/-1;flex-direction:row;align-items:center;gap:10px}
+.partbtn[aria-pressed="true"]{border-color:var(--sing);background:#2a2240;box-shadow:0 0 0 4px var(--sing-soft)}
+.setrow{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--bg2)}
+.setrow .lbl b{display:block;font-size:1.05rem}
+.setrow .lbl small{color:var(--muted)}
+.aa{font-family:var(--fun);color:var(--gold);margin-left:6px}
+/* You box */
+.youbox{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:var(--bg2);border-radius:20px;padding:12px 16px}
+.youl{display:flex;flex-direction:column;align-items:center;gap:2px}
+.youl .kid{width:74px;height:auto}
+.yousyl{font-family:var(--fun);font-size:1.6rem;font-weight:600;min-width:90px;text-align:center;line-height:1}
+.tuner{position:relative;height:30px;border-radius:99px;background:var(--card);border:2px solid var(--line);overflow:hidden}
+.tuner .tz{position:absolute;top:0;bottom:0;background:var(--good-soft);border-left:2px solid var(--good);border-right:2px solid var(--good);transition:background .2s}
+.tuner.ok .tz{background:rgba(52,211,153,.4)}
+.tuner .tn{position:absolute;top:3px;bottom:3px;width:12px;margin-left:-6px;border-radius:6px;background:#dfe5f5;left:50%;transition:left .1s linear, background .2s}
+.tuner .tn.ok{background:var(--good);box-shadow:0 0 0 4px rgba(17,128,77,.25)}
+.tunerlbl{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);font-weight:700;gap:6px}
+.youhint{font-weight:700;font-size:1.05rem;min-height:1.5em;margin-top:4px}
+.sig{display:inline-flex;gap:3px;align-items:flex-end;height:18px;margin-left:8px;vertical-align:middle}
+.sig i{display:block;width:6px;border-radius:2px;background:var(--line)}
+.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:11px}.sig i:nth-child(3){height:16px}
+.sig.l1 i:nth-child(1), .sig.l2 i:nth-child(-n+2), .sig.l3 i{background:var(--good)}
+.say{font-size:1.25rem;font-weight:700;text-align:center;min-height:1.6em;font-family:var(--fun)}
+.say.good{color:var(--good);animation:pop .45s}
+.say.bad{color:var(--bad)}
+.score{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.score span{display:inline-flex;gap:6px;align-items:center;padding:8px 16px;border-radius:99px;background:var(--bg2);font-weight:700}
+.score span:empty{display:none}
+.floaty{position:fixed;z-index:70;pointer-events:none;font-family:var(--fun);font-weight:700;font-size:1.6rem;color:var(--good);animation:floatUp 1.1s ease-out forwards}
+/* Breathing */
+.breath{position:relative;display:grid;place-items:center;height:300px}
+.circle{position:relative;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #9bbcff, var(--accent));display:grid;place-items:center;color:#fff;font-weight:700;font-size:2.2rem;font-family:var(--fun);transform:scale(1);transition:transform 1s ease-in-out;box-shadow:0 0 40px rgba(29,79,184,.35)}
+.circle.out{background:radial-gradient(circle at 35% 35%, #8fe0b8, var(--good))}
+.ripple{position:absolute;width:110px;height:110px;border-radius:50%;border:3px solid var(--accent);opacity:0}
+.breath.on .ripple{animation:ripple 3s ease-out infinite}
+.breath.on .ripple.r2{animation-delay:1s}.breath.on .ripple.r3{animation-delay:2s}
+.bigclock{font-size:4rem;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;line-height:1;font-family:var(--fun)}
+.airbar{height:28px;border-radius:99px;background:var(--bg2);overflow:hidden;border:2px solid var(--line)}
+.airbar>div{height:100%;width:100%;background:linear-gradient(90deg,#8fe0b8,var(--good));transition:width .1s linear}
+.beats{display:flex;gap:14px;justify-content:center}
+.beats span{width:58px;height:58px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-weight:700;font-size:1.2rem;font-family:var(--fun);transition:background .08s}
+.beats span.on{background:var(--sing);color:#fff;animation:pop .3s}
+/* Choices */
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.choices .btn{font-size:1.4rem;min-height:80px;font-family:var(--fun);animation:fadeUp .35s both}
+.choices .btn.right{background:var(--good);border-color:var(--good);color:#fff;animation:pop .45s}
+.choices .btn.wrong{background:var(--bad);border-color:var(--bad);color:#fff;animation:shake .45s}
+.keygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.keybtn{color:#14203a;border:2px solid var(--line);background:var(--paper);border-radius:18px;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;transition:transform .15s}
+.keybtn:hover{transform:translateY(-3px)}
+.keybtn[aria-pressed="true"]{border-color:var(--sing);box-shadow:0 0 0 4px var(--sing-soft)}
+.keybtn svg{width:100%;height:auto;min-width:0}
+.vtgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.vtbtn{color:var(--ink);border:2px solid var(--line);background:var(--bg2);border-radius:18px;padding:10px 12px;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center}
+.vtbtn .kid{width:54px;height:54px;flex:0 0 auto}
+.vtbtn b{display:block;font-size:1rem}
+.vtbtn span{color:var(--muted);font-size:.8rem}
+.vtbtn[aria-pressed="true"]{border-color:var(--sing);background:var(--sing-soft)}
+.reveal{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.reveal .kid{width:130px;height:auto;animation:popIn .8s cubic-bezier(.2,1.5,.4,1) both}
+.result-big{font-size:2.1rem;font-weight:700;color:var(--accent);font-family:var(--fun);animation:pop .6s}
+.chordres{display:flex;flex-direction:column;gap:8px}
+.chordres div{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-radius:14px;background:var(--bg2);font-weight:700;animation:fadeUp .4s both}
+.meterbig{position:relative;height:34px;border-radius:99px;background:var(--bg2);border:2px solid var(--line);overflow:hidden}
+.meterbig>div{height:100%;width:0;background:linear-gradient(90deg,var(--sing),var(--gold),var(--good));transition:width .15s}
+.duo{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.duo .kid{width:96px;height:auto}
+/* Finish modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(5,9,20,.65);display:grid;place-items:center;padding:16px;animation:fade .3s both}
+.modal .card{max-width:520px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;animation:zoomIn .5s cubic-bezier(.2,1.4,.4,1) both}
+.modal .kid{width:104px;height:auto}
+.bigstars{display:flex;gap:10px;color:var(--line)}
+.bigstars .ic{width:52px;height:52px}
+.bigstars .on{color:var(--gold);animation:starPop .5s cubic-bezier(.2,1.6,.4,1) both}
+.bigstars .on:nth-child(2){animation-delay:.25s}.bigstars .on:nth-child(3){animation-delay:.5s}
+/* Keyframes */
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(17,128,77,.6)}100%{box-shadow:0 0 0 10px rgba(17,128,77,0)}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(29,79,184,.5)}100%{box-shadow:0 0 0 14px rgba(29,79,184,0)}}
+@keyframes glow{0%,100%{box-shadow:0 4px 0 #9c4a00,0 0 0 0 rgba(224,106,0,.5)}50%{box-shadow:0 4px 0 #9c4a00,0 0 0 12px rgba(224,106,0,0)}}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes zoomIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.2) rotate(-20deg)}to{opacity:1;transform:none}}
+@keyframes starPop{from{transform:scale(0) rotate(-90deg)}to{transform:none}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes noteIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes halo{from{transform:scale(1);opacity:.4}to{transform:scale(2.4);opacity:0}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes jump{0%,100%{transform:translateY(0)}35%{transform:translateY(-16px)}60%{transform:translateY(0)}75%{transform:translateY(-5px)}}
+@keyframes sway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+@keyframes headbob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes noteFly{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(22px,-38px) rotate(20deg)}}
+@keyframes floatUp{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-70px) scale(1.2)}}
+@keyframes ripple{from{transform:scale(1);opacity:.6}to{transform:scale(2.6);opacity:0}}
+@keyframes fillbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* Phones */
+@media (max-width:640px){
+  html{font-size:17px}
+  .wrap{padding:8px 12px 120px}
+  .brand h1{font-size:1.15rem}
+  .brand small{display:none}
+  .logo,.logo svg{width:48px;height:48px}
+  .card{padding:16px;border-radius:20px}
+  .btn{min-height:54px;padding:8px 16px}
+  .btn.big{min-height:60px;font-size:1.02rem;padding:10px 16px}
+  .btnrow .btn{flex:1 1 140px}
+  .wizfoot{padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+  .wizfoot .btn{max-width:none}
+  .wizhead h2{font-size:1.3rem}
+  .wizhead h2 .aicon{width:40px;height:40px}
+  .steptitle{font-size:1.25rem}
+  .hero{grid-template-columns:1fr}
+  .hero-kid{display:none}
+  .hero h2{font-size:1.6rem}
+  .road{padding-left:26px}
+  .road:before{left:23px}
+  .node{left:-26px;width:36px;height:36px;font-size:.9rem}
+  .stepcard{grid-template-columns:46px 1fr;gap:12px;padding:12px 12px 12px 20px}
+  .stepcard .go{grid-column:2}
+  .aicon{width:46px;height:46px;border-radius:14px}
+  .youbox{grid-template-columns:76px 1fr;gap:10px;padding:10px}
+  .youl .kid{width:56px}
+  .charpick{grid-template-columns:1fr}
+  .preview .kid{width:110px}
+  .chargrid{gap:6px}
+  .charbtn b{font-size:.78rem}
+  .charbtn small{font-size:.62rem}
+  .setrow{grid-template-columns:1fr}
+  .sethead h2{font-size:1.6rem}
+  .yousyl{font-size:1.25rem;min-width:0}
+  .tunerlbl{font-size:.7rem}
+  .bigclock{font-size:3rem}
+  .huge{font-size:1.9rem}
+  .say{font-size:1.1rem}
+  .duo{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .duo .kid{width:80px}
+  .lhero{padding:20px 12px 0;border-radius:24px}
+  .singer .tag{font-size:.62rem;padding:2px 6px}
+  .choices .btn{font-size:1.2rem;min-height:68px}
+  .breath{height:240px}
+  .tips li{font-size:1rem;padding:10px}
+  .tips .ti{width:40px;height:40px}
+}
+@media (prefers-reduced-motion: reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="bgfx" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="bar">
+    <button class="brand" id="homeBtn" aria-label="Go to the start page">
+      <span class="logo" id="logo" aria-hidden="true"></span>
+      <span><h1>Choir Voice Trainer</h1><small>Solfa · Grand staff · S A T B</small></span>
+    </button>
+    <div class="chips">
+      <button class="chip" id="vtChip" aria-label="My journey">Journey</button>
+      <button class="chip off" id="micChip">Mic off</button>
+    </div>
+  </header>
+  <main id="app"></main>
+</div>
+<div class="wizfoot" id="foot" hidden><div class="in">
+  <button class="btn big" id="backBtn">Back</button>
+  <button class="btn big primary" id="nextBtn">Next</button>
+</div></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const mod = (a, n) => ((a % n) + n) % n;
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const FRAMED = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+const CALM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROUNDS = 30;
+
+/* ===== Icons (drawn symbols, no emoji) ===== */
+const ICONS = {
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/>',
+  play: '<path class="f" d="M7 4.5l12.5 7.5L7 19.5z"/>',
+  stop: '<rect class="f" x="6" y="6" width="12" height="12" rx="2.5"/>',
+  home: '<path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/>',
+  map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/>',
+  left: '<path d="M15 5l-7 7 7 7"/>',
+  right: '<path d="M9 5l7 7-7 7"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  redo: '<path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/>',
+  phones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
+  flame: '<path d="M12 3c1 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-4.5 3-7 1 2 2 3 3 3 0-3-1-5 0-7z"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle class="f" cx="12" cy="12" r="1.5"/>',
+  key: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
+  ear: '<path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0M10 9a2 2 0 0 1 4 0c0 1-1 1.5-1 2.5"/>',
+  notes: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  quiet: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l4 6M21 9l-4 6"/>',
+  drop: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
+  heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  star: '<path class="f" d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/>',
+  body: '<circle cx="12" cy="4.5" r="2"/><path d="M5 9l7 2 7-2M12 11v5l-3 5M12 16l3 5"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  feet: '<path d="M4 20h16M7 20v-6M17 20v-6M9 9h6"/><circle cx="12" cy="5" r="2"/>',
+  hand: '<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.3-2.5L4 13.5a1.5 1.5 0 0 1 2.6-1.5L8 14"/>',
+  smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01"/>',
+  spark: '<path d="M12 3v5M12 16v5M3 12h5M16 12h5M6 6l3 3M15 15l3 3M6 18l3-3M15 9l3-3"/>',
+  staff: '<path d="M3 6h18M3 10h18M3 14h18M3 18h18"/><ellipse class="f" cx="15" cy="12" rx="2.6" ry="2"/>',
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n].replace(/class="f"/g, 'fill="currentColor" stroke="none"')}</svg>`;
+const B = (n, t) => `${ic(n)}<span>${t}</span>`;
+
+/* ===== Saved settings (this browser only) ===== */
+const S = Object.assign({ vt: null, size: 0, tol: 30, gain: 2, done: {}, best: {}, stars: {}, keyIdx: 0, speak: null }, (() => { try { return JSON.parse(localStorage.getItem('choirTrainer') || '{}'); } catch(e){ return {}; } })());
+['done', 'best', 'stars'].forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
+if (!S.gain) S.gain = 2;
+const save = () => { try { localStorage.setItem('choirTrainer', JSON.stringify(S)); } catch(e){} };
+
+/* ===== Music theory: do re mi fa sol la si (no letter names shown) ===== */
+const SYL = ['do','do♯','re','re♯','mi','fa','fa♯','sol','sol♯','la','si♭','si'];
+const MAJ = [0,2,4,5,7,9,11];
+const NAT = [0,2,4,5,7,9,11];
+const SH_ORD = [3,0,4,1,5,2,6], FL_ORD = [6,2,5,1,4,0,3];
+const REL = {0:[0,0],1:[0,1],2:[1,0],3:[1,1],4:[2,0],5:[3,0],6:[3,1],7:[4,0],8:[4,1],9:[5,0],10:[6,-1],11:[6,0]};
+const KEYS = [
+  { sig: 0, L: 0, pc: 0 },
+  { sig: 1, L: 4, pc: 7 }, { sig: 2, L: 1, pc: 2 }, { sig: 3, L: 5, pc: 9 }, { sig: 4, L: 2, pc: 4 }, { sig: 5, L: 6, pc: 11 }, { sig: 6, L: 3, pc: 6 },
+  { sig: -1, L: 3, pc: 5 }, { sig: -2, L: 6, pc: 10 }, { sig: -3, L: 2, pc: 3 }, { sig: -4, L: 5, pc: 8 }, { sig: -5, L: 1, pc: 1 }, { sig: -6, L: 4, pc: 6 },
+];
+const keyName = k => k.sig === 0 ? 'No sharps or flats' : k.sig > 0 ? `${k.sig} sharp${k.sig > 1 ? 's' : ''} ${'♯'.repeat(k.sig)}` : `${-k.sig} flat${k.sig < -1 ? 's' : ''} ${'♭'.repeat(-k.sig)}`;
+const keyForPc = pc => KEYS.find(k => k.pc === mod(pc, 12) && Math.abs(k.sig) <= 5) || KEYS.find(k => k.pc === mod(pc, 12));
+function ksAlt(key, L){ if (key.sig > 0) return SH_ORD.slice(0, key.sig).includes(L) ? 1 : 0; if (key.sig < 0) return FL_ORD.slice(0, -key.sig).includes(L) ? -1 : 0; return 0; }
+function spell(m, key){ const r = REL[mod(m - key.pc, 12)]; const L = mod(key.L + r[0], 7); const o = Math.round((m - NAT[L]) / 12) - 1; const a = m - (12 * (o + 1) + NAT[L]); return { L, o, a, d: o * 7 + L }; }
+const ACC = { 1: '♯', '-1': '♭', 0: '♮', 2: '𝄪', '-2': '𝄫' };
+const VT = {
+  S1: { name: 'First Soprano',  part: 'S', lo: 64, hi: 81, about: 'The highest voice in the choir. Often sings the tune.' },
+  S2: { name: 'Second Soprano', part: 'S', lo: 60, hi: 77, about: 'High voice, a little lower and warmer than First Soprano.' },
+  A1: { name: 'First Alto',     part: 'A', lo: 57, hi: 74, about: 'Middle-low women’s or children’s voice. Sings harmony under the sopranos.' },
+  A2: { name: 'Second Alto',    part: 'A', lo: 53, hi: 71, about: 'The lowest women’s voice. Rich and deep.' },
+  T1: { name: 'First Tenor',    part: 'T', lo: 50, hi: 69, about: 'The highest men’s voice. Bright and ringing.' },
+  T2: { name: 'Second Tenor',   part: 'T', lo: 47, hi: 65, about: 'Men’s voice between tenor and baritone.' },
+  B1: { name: 'Baritone (First Bass)', part: 'B', lo: 45, hi: 64, about: 'Middle men’s voice. Warm and strong.' },
+  B2: { name: 'Second Bass',    part: 'B', lo: 40, hi: 60, about: 'The lowest voice in the choir. The foundation.' },
+};
+const vt = () => VT[S.vt] || VT.S2;
+const vtId = () => VT[S.vt] ? S.vt : 'S2';
+const staffOf = part => (part === 'S' || part === 'A') ? 'T' : 'B';
+function homeDo(key, v = vt()){ for (let m = v.lo - 3; m <= v.lo + 8; m++) if (mod(m - key.pc, 12) === 0) return m; }
+function refDo(key, v = vt()){ const h = homeDo(key, v); return h >= v.lo ? h : h + 12; }
+const dToMidi = (d, hd) => hd + 12 * Math.floor(d / 7) + MAJ[mod(d, 7)];
+function sylTxt(m, key, hd){ const rel = Math.round(m) - hd; const o = Math.floor(rel / 12); return SYL[mod(rel, 12)] + (o > 0 ? "'".repeat(o) : ",".repeat(-o)); }
+const inV = (m, v = vt()) => m >= v.lo && m <= v.hi;
+function degWindow(key, span, v = vt()){
+  const hd = homeDo(key, v);
+  for (const s of [0, 7, -3, 4, -7, -4, 3, 1, -1, 2, 5]){
+    let ok = true; for (let d = s; d <= s + span; d++) if (!inV(dToMidi(d, hd), v)) { ok = false; break; }
+    if (ok) return { hd, s };
+  }
+  return { hd, s: 0 };
+}
+let lastPat = '';
+function pattern(level, key, v = vt()){
+  for (let tries = 0; tries < 6; tries++){
+    const p = makePattern(level, key, v), sig = p.join(',');
+    if (sig !== lastPat){ lastPat = sig; return p; }
+  }
+  return makePattern(level, key, v);
+}
+function makePattern(level, key, v){
+  if (level === 1){ const w = degWindow(key, 7, v); return [dToMidi(w.s + Math.floor(Math.random() * 8), w.hd)]; }
+  if (level === 2){ const w = degWindow(key, 7, v); const a = w.s + Math.floor(Math.random() * 8); let b = a + rnd([1, -1, 2, -2, 1, -1]); b = Math.max(w.s, Math.min(w.s + 7, b)); if (b === a) b = a === w.s ? a + 1 : a - 1; return [a, b].map(d => dToMidi(d, w.hd)); }
+  if (level === 3){ const w = degWindow(key, 7, v); const shapes = [[0,2,4],[4,2,0],[0,1,2],[2,1,0],[2,3,4],[4,3,2],[0,4,2],[4,5,4],[0,2,1],[7,6,5],[5,6,7],[4,2,4],[0,4,7],[7,4,0],[2,4,5],[3,2,1]]; return rnd(shapes).map(d => dToMidi(w.s + d, w.hd)); }
+  const w = degWindow(key, 7, v); let d = w.s + rnd([0, 0, 2, 4]); const out = [d];
+  while (out.length < 4){ const opts = [-2, -1, 1, 2, 1, -1, 3, -3].map(x => d + x).filter(x => x >= w.s && x <= w.s + 7 && x !== d); d = rnd(opts); out.push(d); }
+  const finals = [w.s, w.s + 7]; out.push(finals.reduce((a, b) => Math.abs(b - d) < Math.abs(a - d) ? b : a));
+  return out.map(x => dToMidi(x, w.hd));
+}
+
+/* ===== Sound ===== */
+let ctx = null, master = null; const sounds = new Set();
+function A(){
+  if (!ctx){ ctx = new (window.AudioContext || window.webkitAudioContext)(); const c = ctx.createDynamicsCompressor(); master = ctx.createGain(); master.gain.value = 0.85; master.connect(c); c.connect(ctx.destination); }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function tone(m, t, dur, vol = 0.2, m2 = null){
+  A(); dur = Math.max(dur, 0.3);
+  const f = mtof(m);
+  const o1 = ctx.createOscillator(); o1.type = 'sawtooth';
+  const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.detune.value = 5;
+  [o1, o2].forEach(o => { o.frequency.setValueAtTime(f, t); if (m2 != null) o.frequency.exponentialRampToValueAtTime(mtof(m2), t + dur * 0.95); });
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 5.2; const lg = ctx.createGain();
+  lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(m2 == null ? 9 : 0, t + 0.7);
+  lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune);
+  const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = Math.min(4200, f * 4 + 500); fl.Q.value = 0.6;
+  const g1 = ctx.createGain(); g1.gain.value = 0.3; o1.connect(g1); g1.connect(fl); o2.connect(fl);
+  const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.09); g.gain.setValueAtTime(vol, t + dur - 0.15); g.gain.linearRampToValueAtTime(0, t + dur);
+  fl.connect(g); g.connect(master);
+  [o1, o2, lfo].forEach(o => { o.start(t); o.stop(t + dur + 0.05); });
+  const h = { stop(){ const n = ctx.currentTime; g.gain.cancelScheduledValues(n); g.gain.setValueAtTime(0.0001, n + 0.03); [o1, o2, lfo].forEach(o => { try { o.stop(n + 0.05); } catch(e){} }); } };
+  sounds.add(h); o1.onended = () => sounds.delete(h);
+}
+function bell(freqs, vol = 0.08, gap = 0.09){
+  A(); let t = ctx.currentTime + 0.01;
+  freqs.forEach(f => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.6); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.65); t += gap; });
+}
+const chime = () => bell([1318.5, 1975.5, 2637]);
+const fanfare = () => bell([784, 988, 1175, 1568, 1976], 0.09, 0.11);
+const boop = () => bell([330, 262], 0.07, 0.12);
+function click(t, strong){
+  A(); const o = ctx.createOscillator(); o.frequency.value = strong ? 1500 : 1000; const g = ctx.createGain();
+  g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.06); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08);
+}
+function playBuf(buf, when, off = 0){ A(); const s = ctx.createBufferSource(); s.buffer = buf; s.connect(master); s.start(when, Math.max(0, Math.min(off, buf.duration - 0.01))); const h = { stop(){ try { s.stop(); } catch(e){} } }; sounds.add(h); s.onended = () => sounds.delete(h); }
+function stopSound(){ sounds.forEach(h => h.stop()); sounds.clear(); }
+function seq(ms, gap = 0.7, vol = 0.22){ A(); stopSound(); let t = ctx.currentTime + 0.05; ms.forEach(m => { tone(m, t, gap * 0.95, vol); t += gap; }); return t - ctx.currentTime; }
+function chord(ms, t, dur, vol = 0.12){ ms.forEach(m => tone(m, t, dur, vol)); }
+function cadence(key, v = vt()){ A(); stopSound(); const d = refDo(key, v); let t = ctx.currentTime + 0.05; [0, 4, 7, 12].forEach(i => { tone(d + i, t, 0.42, 0.18); t += 0.36; }); chord([d, d + 4, d + 7], t + 0.1, 1.0); tone(d, t + 1.3, 1.1, 0.22); }
+
+/* ===== Effects ===== */
+const bg = $('#bgfx'), bgc = bg.getContext('2d');
+const fx = $('#fx'), fxc = fx.getContext('2d');
+const GLYPHS = ['♪', '♫', '♩', '♬', '𝄞'];
+let bgNotes = [], bgOn = false;
+function sizeCanvas(c){ const d = window.devicePixelRatio || 1; c.width = innerWidth * d; c.height = innerHeight * d; c.getContext('2d').setTransform(d, 0, 0, d, 0, 0); }
+function initBg(){
+  sizeCanvas(bg); sizeCanvas(fx);
+  bgNotes = Array.from({ length: Math.min(16, Math.round(innerWidth / 70)) }, () => ({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, s: 18 + Math.random() * 24, v: 0.15 + Math.random() * 0.3, w: Math.random() * 6.28, g: rnd(GLYPHS), c: rnd(['#1d4fb8', '#e06a00', '#11804d', '#7a4fd0']) }));
+  if (!bgOn){ bgOn = true; requestAnimationFrame(drawBg); } else if (CALM) drawBg();
+}
+function drawBg(){
+  bgc.clearRect(0, 0, innerWidth, innerHeight);
+  bgNotes.forEach(n => {
+    if (!CALM){ n.y -= n.v; n.w += 0.01; if (n.y < -40){ n.y = innerHeight + 30; n.x = Math.random() * innerWidth; } }
+    bgc.globalAlpha = 0.12; bgc.fillStyle = n.c; bgc.font = `${n.s}px "Noto Music", serif`;
+    bgc.fillText(n.g, n.x + Math.sin(n.w) * 14, n.y);
+  });
+  bgc.globalAlpha = 1;
+  if (!CALM) requestAnimationFrame(drawBg);
+}
+let parts = [], fxRunning = false;
+function confetti(x = innerWidth / 2, y = innerHeight / 3, n = 60, spread = 1){
+  if (CALM) return;
+  if (innerWidth < 640) n = Math.round(n * 0.6);
+  const cols = ['#1d4fb8', '#e06a00', '#11804d', '#f2b705', '#d6336c', '#7a4fd0'];
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, sp = (3 + Math.random() * 7) * spread;
+    parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 5 * spread, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.3, s: 6 + Math.random() * 8, c: rnd(cols), g: Math.random() < 0.3 ? rnd(['♪', '♫', '★']) : null, life: 0 });
+  }
+  if (!fxRunning){ fxRunning = true; requestAnimationFrame(fxLoop); }
+}
+function fxLoop(){
+  fxc.clearRect(0, 0, innerWidth, innerHeight);
+  parts = parts.filter(p => p.life < 140 && p.y < innerHeight + 40);
+  parts.forEach(p => {
+    p.life++; p.vy += 0.25; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    fxc.save(); fxc.globalAlpha = Math.max(0, 1 - p.life / 140); fxc.translate(p.x, p.y); fxc.rotate(p.r); fxc.fillStyle = p.c;
+    if (p.g){ fxc.font = `${p.s * 2.2}px "Noto Music", serif`; fxc.fillText(p.g, -p.s / 2, p.s / 2); } else fxc.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+    fxc.restore();
+  });
+  if (parts.length) requestAnimationFrame(fxLoop); else { fxRunning = false; fxc.clearRect(0, 0, innerWidth, innerHeight); }
+}
+function floaty(el, text, color){
+  if (!el) return; const r = el.getBoundingClientRect(); const d = document.createElement('div');
+  d.className = 'floaty'; d.textContent = text; d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = (r.top - 10) + 'px'; if (color) d.style.color = color;
+  document.body.appendChild(d); setTimeout(() => d.remove(), 1200);
+}
+function burstAt(el, n = 24){ if (!el) return; const r = el.getBoundingClientRect(); confetti(r.left + r.width / 2, r.top + r.height / 2, n, 0.6); }
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn'); if (!b || CALM) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height), sp = document.createElement('span');
+  sp.className = 'rip'; sp.style.width = sp.style.height = s + 'px'; sp.style.left = (e.clientX - r.left - s / 2) + 'px'; sp.style.top = (e.clientY - r.top - s / 2) + 'px';
+  b.appendChild(sp); setTimeout(() => sp.remove(), 600);
+});
+addEventListener('resize', () => initBg());
+
+/* ===== Timers for the current screen ===== */
+let timers = [];
+const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
+const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+/* ===== Choir members: one cartoon singer per voice type ===== */
+const KIDS = {
+  S1: { name: 'Bea',        age: 'Young adult', skin: '#f6d2b6', hair: '#2b1d17', style: 'long' },
+  S2: { name: 'Carmen',     age: 'Middle age',  skin: '#e8b58f', hair: '#4a2f22', style: 'bun' },
+  A1: { name: 'Joy',        age: 'Young adult', skin: '#8a5638', hair: '#1f140e', style: 'curls' },
+  A2: { name: 'Lola Nena',  age: 'Senior',      skin: '#f1cfb2', hair: '#dadee5', style: 'grey' },
+  T1: { name: 'Migo',       age: 'Young adult', skin: '#dca27a', hair: '#1e1611', style: 'quiff' },
+  T2: { name: 'Paolo',      age: 'Middle age',  skin: '#c68a5e', hair: '#3a2a20', style: 'part' },
+  B1: { name: 'Ben',        age: 'Middle age',  skin: '#6e432a', hair: '#17100b', style: 'beard' },
+  B2: { name: 'Lolo Ramon', age: 'Senior',      skin: '#efc7a1', hair: '#d5d9e0', style: 'bald' },
+};
+const circ = (arr, fill) => arr.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"/>`).join('');
+function kidSVG(id, cls = '', face = false){
+  const k = KIDS[id] || KIDS.S1, H = k.hair, sk = k.skin;
+  const brow = (k.style === 'grey' || k.style === 'bald') ? '#8f96a3' : H;
+  const SENIOR = 'M44.5 40 l-2.6 -1.3M44.5 43 l-2.6 1.3M75.5 40 l2.6 -1.3M75.5 43 l2.6 1.3M52.3 50.5 Q50.8 53.8 52.8 57M67.7 50.5 Q69.2 53.8 67.2 57';
+  let back = '', front = '', extra = '', beard = '', lines = '';
+  switch (k.style){
+    case 'long':
+      back = `<path d="M38 38 Q35 88 44 98 L76 98 Q85 88 82 38 Q82 15 60 15 Q38 15 38 38Z" fill="${H}"/>`;
+      front = `<path d="M40 41 Q37 16 60 16 Q83 16 80 41 Q77 26 63 25 Q50 31 40 41Z" fill="${H}"/>`; break;
+    case 'bun':
+      back = `<circle cx="60" cy="15" r="9.5" fill="${H}"/>`;
+      front = `<path d="M40 40 Q39 18 60 18 Q81 18 80 40 Q75 25 60 26 Q45 25 40 40Z" fill="${H}"/>`;
+      lines = 'M52.6 51 Q51.4 53.8 53 56.5M67.4 51 Q68.6 53.8 67 56.5'; break;
+    case 'curls':
+      back = circ([[40,28,10],[49,19,10],[61,15,11],[73,19,10],[81,29,9.5],[84,42,8.5],[36,42,8.5],[37,56,8],[83,56,8],[40,67,7],[80,67,7]], H);
+      front = circ([[47,23,6.5],[56,20,6.5],[65,20,6.5],[73,24,6]], H); break;
+    case 'grey':
+      front = circ([[41,31,7.5],[47,22,8],[57,17.5,8.5],[67,18,8.5],[76,23,8],[80,32,6.5],[40,39,5.5],[80,39,5.5]], H);
+      lines = SENIOR; break;
+    case 'quiff':
+      front = `<path d="M40 37 Q37 15 56 12 Q66 9 74 14 Q82 19 80 36 Q77 27 70 25 Q73 19 64 19 Q57 23 49 22 Q43 27 40 37Z" fill="${H}"/>`; break;
+    case 'part':
+      front = `<path d="M40 37 Q38 16 60 15 Q82 16 80 37 Q77 25 65 23 L58 19.5 Q48 22 40 37Z" fill="${H}"/><path d="M40.6 37 Q40.2 32 42.4 29.5 L42.6 38.5Z M79.4 37 Q79.8 32 77.6 29.5 L77.4 38.5Z" fill="#9aa1ad"/>`;
+      lines = 'M53 29.5 Q60 28 67 29.5'; break;
+    case 'beard':
+      front = `<path d="M41 33 Q42 16 60 16 Q78 16 79 33 Q72 24 60 24 Q48 24 41 33Z" fill="${H}"/>`;
+      beard = `<path d="M41 42 Q40 64 60 66 Q80 64 79 42 Q76 53 68 55 Q60 51 52 55 Q44 53 41 42Z" fill="${H}"/><path d="M53 52 Q57 49.5 60 51 Q63 49.5 67 52 Q63 53.5 60 52.6 Q57 53.5 53 52Z" fill="${H}"/>`; break;
+    case 'bald':
+      front = `<ellipse cx="41.6" cy="37" rx="3.6" ry="7.5" fill="${H}"/><ellipse cx="78.4" cy="37" rx="3.6" ry="7.5" fill="${H}"/><ellipse cx="54" cy="24" rx="7" ry="3" fill="#fff" opacity=".3"/>`;
+      extra = `<g fill="none" stroke="#6b7280" stroke-width="1.4"><rect x="47.6" y="38.4" width="9.4" height="7" rx="2.5"/><rect x="63" y="38.4" width="9.4" height="7" rx="2.5"/><path d="M57 41.4h6"/></g><path d="M53 52 Q57 48.5 60 50.5 Q63 48.5 67 52 Q63 54 60 52.3 Q57 54 53 52Z" fill="${H}"/>`;
+      lines = SENIOR + 'M53 28.5 Q60 27 67 28.5M54.5 31.5 Q60 30.2 65.5 31.5'; break;
+  }
+  return `<svg class="kid ${face ? 'face ' : ''}${cls}" viewBox="${face ? '36 13 48 48' : '0 0 120 200'}" data-kid="${id}" aria-hidden="true">
+    <circle class="k-glow" cx="60" cy="100" r="70"/>
+    <g class="k-sway">
+      ${back}
+      <rect x="54.5" y="55" width="11" height="13" rx="3" fill="${sk}"/>
+      <path class="k-robe" d="M33 74 Q60 64 87 74 L99 196 Q60 202 21 196Z"/>
+      <path class="k-pleat" d="M46 92 L42 194M53 93 L51 197M67 93 L69 197M74 92 L78 194M60 72 V198"/>
+      <path class="k-robe" d="M33 74 Q60 64 87 74 L88 90 Q60 95 32 90Z"/>
+      <path class="k-pleat" d="M38 79 l1 7M43 76 l.6 9M77 76 l-.6 9M82 79 l-1 7"/>
+      <path class="k-robe" d="M51 61 L51 70 Q60 73.5 69 70 L69 61 Q60 64 51 61Z"/>
+      <path class="k-pleat" d="M60 64 V72"/>
+      <g class="k-hold">
+        <path class="k-robe" d="M33 75 Q19 104 23 140 L45 142 Q44 116 42 90Z"/>
+        <path class="k-robe" d="M87 75 Q101 104 97 140 L75 142 Q76 116 78 90Z"/>
+        <path class="k-pleat" d="M30 100 Q28 120 30 138M90 100 Q92 120 90 138"/>
+        <rect class="k-binder" x="40" y="108" width="40" height="30" rx="2.5"/>
+        <rect class="k-spine" x="40.8" y="108.8" width="6" height="28.4" rx="1.6"/>
+        <circle cx="44" cy="137" r="4.6" fill="${sk}"/><circle cx="76" cy="137" r="4.6" fill="${sk}"/>
+      </g>
+      <g class="k-cheer">
+        <path class="k-robe" d="M35 78 Q18 62 15 32 L28 28 Q31 54 47 72Z"/>
+        <path class="k-robe" d="M85 78 Q102 62 105 32 L92 28 Q89 54 73 72Z"/>
+        <circle cx="21" cy="28" r="4.8" fill="${sk}"/><circle cx="99" cy="28" r="4.8" fill="${sk}"/>
+      </g>
+      <g class="k-head">
+        <circle cx="40.6" cy="42" r="3.6" fill="${sk}"/><circle cx="79.4" cy="42" r="3.6" fill="${sk}"/>
+        <ellipse cx="60" cy="40" rx="19.5" ry="22" fill="${sk}"/>
+        ${front}
+        <path class="k-brow" d="M48.5 36 Q52.5 34 56 35.6M64 35.6 Q67.5 34 71.5 36" stroke="${brow}"/>
+        <path class="k-sad" d="M48.5 34.4 L56 36.8M71.5 34.4 L64 36.8" stroke="${brow}"/>
+        <g class="k-eyes"><ellipse cx="52.5" cy="41.5" rx="2.3" ry="2.9"/><ellipse cx="67.5" cy="41.5" rx="2.3" ry="2.9"/><circle class="k-shine" cx="53.2" cy="40.6" r=".8"/><circle class="k-shine" cx="68.2" cy="40.6" r=".8"/></g>
+        <path class="k-happy" d="M50 42.6 Q52.5 39.6 55 42.6M65 42.6 Q67.5 39.6 70 42.6"/>
+        <path class="k-nose" d="M60 42.5 Q57.6 48 60.6 49"/>
+        <ellipse class="k-cheek" cx="49.5" cy="48.6" rx="3.4" ry="1.9"/><ellipse class="k-cheek" cx="70.5" cy="48.6" rx="3.4" ry="1.9"/>
+        ${lines ? `<path class="k-lines" d="${lines}"/>` : ''}
+        ${beard}
+        <path class="k-smile" d="M55.2 55.4 Q60 59.4 64.8 55.4"/>
+        <path class="k-frown" d="M55.2 58.6 Q60 55 64.8 58.6"/>
+        <ellipse class="k-mouth" cx="60" cy="56.8" rx="3.4" ry="1.5"/>
+        ${extra}
+      </g>
+      <text class="k-note" x="84" y="22">♪</text><text class="k-note n2" x="90" y="34">♫</text>
+    </g>
+  </svg>`;
+}
+function kidUpdate(root, level, sung, ok){
+  const b = $('.kid', root); if (!b) return;
+  const mo = $('.k-mouth', b); mo.setAttribute('ry', (1.5 + Math.min(4.2, level * 70)).toFixed(1)); mo.setAttribute('rx', (3.4 + Math.min(1.4, level * 20)).toFixed(1));
+  b.classList.toggle('singing', !!sung); b.classList.toggle('ok', !!ok && !!sung);
+}
+function kidReact(root, what){
+  const b = root && (root.classList && root.classList.contains('kid') ? root : $('.kid', root)); if (!b) return;
+  b.classList.remove('yay', 'oops'); void b.getBoundingClientRect(); b.classList.add(what);
+  setTimeout(() => b.classList.remove(what), what === 'yay' ? 1100 : 900);
+}
+const kidName = id => (KIDS[id] || KIDS.S1).name;
+const avatar = () => KIDS[S.avatar] ? S.avatar : (VT[S.vt] ? S.vt : 'S1');
+function logoSVG(){
+  const cx = 21.5, cy = 20, a = 52 * Math.PI / 180;
+  const arc = (r, col, w) => `<path d="M${(cx + r * Math.cos(-a)).toFixed(2)} ${(cy + r * Math.sin(-a)).toFixed(2)} A${r} ${r} 0 0 1 ${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 48 48" width="58" height="58" aria-hidden="true">
+    <defs>
+      <linearGradient id="lgbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22307a"/><stop offset=".55" stop-color="#3b2a8f"/><stop offset="1" stop-color="#7a2f9e"/></linearGradient>
+      <radialGradient id="lgsh" cx=".3" cy=".15" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <clipPath id="lgcl"><rect width="48" height="48" rx="13"/></clipPath>
+    </defs>
+    <g clip-path="url(#lgcl)">
+      <rect width="48" height="48" fill="url(#lgbg)"/>
+      <circle cx="16" cy="54" r="22" fill="#f7c948" opacity=".18"/>
+      ${arc(7, '#f7c948', 2.4)}${arc(11.5, '#ff8a5c', 2.4)}${arc(16, '#3fd8a0', 2.4)}${arc(20.5, '#6cc4ff', 2.4)}
+      <path d="M5 49 Q6 31 16 29 Q26 31 27 49Z" fill="#f4efe3"/>
+      <path d="M16 31 V49M11.5 34 L10 49M20.5 34 L22 49" stroke="#d9cfb8" stroke-width=".9" fill="none"/>
+      <path d="M12.6 25.5 V29.2 Q16 30.8 19.4 29.2 V25.5 Q16 26.8 12.6 25.5Z" fill="#f4efe3" stroke="#d9cfb8" stroke-width=".6"/>
+      <ellipse cx="16" cy="18" rx="6.4" ry="7.2" fill="#f2c9a3"/>
+      <path d="M9.6 17.6 Q9.4 10.4 16 10.3 Q22.6 10.4 22.4 17.6 Q20.6 13.2 16.4 13.6 Q12.2 13.2 9.6 17.6Z" fill="#2b1d17"/>
+      <circle cx="13.9" cy="17.6" r=".8" fill="#1a1a2e"/><circle cx="18.1" cy="17.6" r=".8" fill="#1a1a2e"/>
+      <ellipse cx="12.6" cy="20.2" rx="1.2" ry=".7" fill="#ff8fa3" opacity=".6"/><ellipse cx="19.4" cy="20.2" rx="1.2" ry=".7" fill="#ff8fa3" opacity=".6"/>
+      <ellipse cx="16" cy="21.6" rx="1.5" ry="1.9" fill="#6b1c27"/>
+      <path d="M41 37 l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z" fill="#ffe08a"/>
+      <circle cx="37" cy="44" r=".8" fill="#ffe08a" opacity=".8"/>
+      <rect width="48" height="48" fill="url(#lgsh)"/>
+    </g>
+  </svg>`;
+}
+
+
+/* ===== Microphone + pitch detection (filtered, calibrated, octave-safe) ===== */
+const MIC = { state: 'off', stream: null, an: null, gainNode: null, buf: null, yin: null, m: null, level: 0, peak: 0, floor: 0.003, calib: [], calibUntil: 0, hist: [], stable: null, stableT: 0, jump: 0, subs: new Set() };
+const GAINS = [1, 2.5, 6];
+const gateLvl = () => Math.max(0.006, MIC.floor * 2.5);
+function micChip(){
+  const c = $('#micChip');
+  c.className = 'chip ' + (MIC.state === 'on' ? 'on' : 'off');
+  c.innerHTML = MIC.state === 'on' ? '<span class="dot"></span>Mic on' : MIC.state === 'blocked' ? `${ic('mic')} No mic` : `${ic('mic')} Turn on mic`;
+}
+async function micOn(){
+  A();
+  if (MIC.state === 'on') return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ MIC.state = 'blocked'; micChip(); return false; }
+  try { MIC.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } }); }
+  catch(e){ MIC.state = 'blocked'; micChip(); return false; }
+  const src = ctx.createMediaStreamSource(MIC.stream);
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 65; hp.Q.value = 0.7;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200; lp.Q.value = 0.7;
+  MIC.gainNode = ctx.createGain(); MIC.gainNode.gain.value = GAINS[S.gain - 1] || 2.5;
+  MIC.an = ctx.createAnalyser(); MIC.an.fftSize = ctx.sampleRate > 50000 ? 4096 : 2048;
+  src.connect(hp); hp.connect(lp); lp.connect(MIC.gainNode); MIC.gainNode.connect(MIC.an);
+  MIC.buf = new Float32Array(MIC.an.fftSize); MIC.yin = new Float32Array(MIC.an.fftSize / 2 + 1);
+  MIC.calib = []; MIC.calibUntil = performance.now() + 900;
+  MIC.state = 'on'; micChip(); requestAnimationFrame(micLoop);
+  return true;
+}
+function setGain(i){ S.gain = i; save(); if (MIC.gainNode) MIC.gainNode.gain.value = GAINS[i - 1]; MIC.floor = 0.003; MIC.calib = []; MIC.calibUntil = performance.now() + 700; }
+function detect(x, sr){
+  let rms = 0, peak = 0; for (let i = 0; i < x.length; i++){ rms += x[i] * x[i]; const a = Math.abs(x[i]); if (a > peak) peak = a; }
+  rms = Math.sqrt(rms / x.length); MIC.level = rms; MIC.peak = peak;
+  if (rms < gateLvl()) return null;
+  const W = Math.floor(x.length / 2), tMin = Math.floor(sr / 1200), tMax = Math.min(W - 1, Math.floor(sr / 65)), d = MIC.yin;
+  for (let t = 1; t <= tMax; t++){ let s = 0; for (let j = 0; j < W; j++){ const df = x[j] - x[j + t]; s += df * df; } d[t] = s; }
+  d[0] = 1; let run = 0; for (let t = 1; t <= tMax; t++){ run += d[t]; d[t] = run ? d[t] * t / run : 1; }
+  let tau = -1;
+  for (let t = Math.max(2, tMin); t <= tMax; t++){ if (d[t] < 0.18){ while (t + 1 <= tMax && d[t + 1] < d[t]) t++; tau = t; break; } }
+  if (tau < 0){ let mi = 1, mv = 1; for (let t = Math.max(2, tMin); t <= tMax; t++) if (d[t] < mv){ mv = d[t]; mi = t; } if (mv < 0.32) tau = mi; else return null; }
+  let b = tau; if (tau > 1 && tau < tMax){ const p = d[tau - 1], q = d[tau], r = d[tau + 1], den = p + r - 2 * q; if (den) b = tau + (p - r) / (2 * den); }
+  return sr / b;
+}
+function micLoop(){
+  if (MIC.state !== 'on') return;
+  const now = performance.now();
+  MIC.an.getFloatTimeDomainData(MIC.buf);
+  let f = detect(MIC.buf, ctx.sampleRate);
+  if (now < MIC.calibUntil){ MIC.calib.push(MIC.level); f = null; if (MIC.calib.length > 5){ const s = [...MIC.calib].sort((a, b) => a - b); MIC.floor = Math.min(0.02, s[Math.floor(s.length / 2)]); } }
+  let raw = f ? 69 + 12 * Math.log2(f / 440) : null;
+  if (raw != null && MIC.stable != null && now - MIC.stableT < 250){
+    const diff = raw - MIC.stable;
+    if (Math.abs(Math.abs(diff) - 12) < 0.8){ MIC.jump++; if (MIC.jump < 8) raw -= 12 * Math.sign(diff); }
+    else MIC.jump = 0;
+  }
+  MIC.hist.push(raw); if (MIC.hist.length > 5) MIC.hist.shift();
+  const v = MIC.hist.filter(x => x != null); let m = null;
+  if (v.length >= 3){ const s = [...v].sort((a, b) => a - b); m = s[Math.floor(s.length / 2)]; }
+  if (m != null && (m < 33 || m > 96)) m = null;
+  if (m != null){ MIC.stable = m; MIC.stableT = now; }
+  MIC.m = m;
+  MIC.subs.forEach(fn => { try { fn(m, MIC.level, now); } catch(e){ console.error(e); } });
+  requestAnimationFrame(micLoop);
+}
+let recorder = null, chunks = [], recStart = 0;
+function startRec(){ recorder = null; if (MIC.state !== 'on' || !window.MediaRecorder) return; chunks = []; try { recorder = new MediaRecorder(MIC.stream); } catch(e){ return; } recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); }; recStart = ctx.currentTime; recorder.onstart = () => { recStart = ctx.currentTime; }; recorder.start(); }
+function stopRec(){ return new Promise(res => { if (!recorder || recorder.state === 'inactive') return res(null); recorder.onstop = async () => { try { res(await ctx.decodeAudioData(await new Blob(chunks).arrayBuffer())); } catch(e){ res(null); } }; recorder.stop(); }); }
+const centsTo = (m, t) => (m - t) * 100;
+
+/* ===== Grand staff ===== */
+const HS = 7;
+const yT = d => 64 + (38 - d) * HS;
+const yB = d => 184 + (26 - d) * HS;
+function ledgers(d, st, x){
+  let s = ''; const L = (yy) => `<line class="ledger" x1="${x - 14}" x2="${x + 14}" y1="${yy}" y2="${yy}"/>`;
+  if (st === 'T'){ if (d <= 28) for (let l = 28; l >= d; l -= 2) s += L(yT(l)); if (d >= 40) for (let l = 40; l <= d; l += 2) s += L(yT(l)); }
+  else { if (d >= 28) for (let l = 28; l <= d; l += 2) s += L(yB(l)); if (d <= 16) for (let l = 16; l >= d; l -= 2) s += L(yB(l)); }
+  return s;
+}
+function staff(key, cols, o = {}){
+  const sig = Math.abs(key.sig);
+  const colW = o.colW || 66;
+  const LX = o.noParts ? 14 : 36;
+  const x0 = LX + 56 + sig * 13 + 10;
+  const W = Math.max(o.minW ?? 420, x0 + cols.length * colW + (o.live ? 90 : 24));
+  const H = o.noLyrics ? 262 : 300;
+  let s = `<svg class="staff" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grand staff: treble clef for soprano and alto, bass clef for tenor and bass">`;
+  for (let i = 0; i < 5; i++){ s += `<line class="ln" x1="${LX}" x2="${W - 8}" y1="${yT(30 + 2 * i)}" y2="${yT(30 + 2 * i)}"/><line class="ln" x1="${LX}" x2="${W - 8}" y1="${yB(18 + 2 * i)}" y2="${yB(18 + 2 * i)}"/>`; }
+  s += `<line class="ln" x1="${LX}" x2="${LX}" y1="${yT(38)}" y2="${yB(18)}" style="stroke-width:2.5"/><line class="ln" x1="${W - 8}" x2="${W - 8}" y1="${yT(38)}" y2="${yB(18)}"/>`;
+  s += `<text class="clef" x="${LX + 6}" y="${yT(32)}" font-size="56">𝄞</text><text class="clef" x="${LX + 6}" y="${yB(20)}" font-size="56">𝄢</text>`;
+  if (!o.noParts) s += `<text class="partlbl" x="2" y="${yT(34) + 5}">S A</text><text class="partlbl" x="2" y="${yB(22) + 5}">T B</text>`;
+  const sp = key.sig > 0 ? [38,35,39,36,33,37,34] : [34,37,33,36,32,35,31];
+  for (let i = 0; i < sig; i++){
+    const g = key.sig > 0 ? '♯' : '♭', x = LX + 50 + i * 13, dy = key.sig > 0 ? 10 : 6;
+    s += `<text class="acc" x="${x}" y="${yT(sp[i]) + dy}">${g}</text><text class="acc" x="${x}" y="${yB(sp[i] - 14) + dy}">${g}</text>`;
+  }
+  cols.forEach((c, ci) => {
+    const cx = x0 + ci * colW + colW / 2;
+    s += `<g class="col" data-col="${ci}" style="animation-delay:${(ci * 0.06).toFixed(2)}s"><rect class="hl" x="${cx - colW / 2 + 3}" y="${yT(44)}" width="${colW - 6}" height="${(o.noLyrics ? yB(12) : 296) - yT(44)}" rx="12"/>`;
+    const ns = c.notes.map(n => ({ ...n, sp: spell(n.m, key) }));
+    ['T', 'B'].forEach(st => {
+      const g = ns.filter(n => n.st === st).sort((a, b) => a.sp.d - b.sp.d);
+      for (let i = 1; i < g.length; i++) if (g[i].sp.d - g[i - 1].sp.d === 1 && !g[i - 1].dx) g[i].dx = 15;
+    });
+    ns.forEach(n => {
+      const y = n.st === 'B' ? yB(n.sp.d) : yT(n.sp.d), x = cx + (n.dx || 0);
+      s += ledgers(n.sp.d, n.st, x);
+      if (n.sp.a !== ksAlt(key, n.sp.L)) s += `<text class="nacc" x="${x - 26}" y="${y + 8}">${ACC[n.sp.a]}</text>`;
+      s += `<g transform="translate(${x} ${y})"><ellipse class="nh${n.me ? ' me' : ''}" cx="0" cy="0" rx="8.6" ry="6.3" transform="rotate(-20)"/></g>`;
+      if (n.tag) s += `<text class="tag${n.me ? ' me' : ''}" x="${x + 14}" y="${y + 5}">${n.tag}</text>`;
+    });
+    if (c.top) s += `<text class="top" x="${cx}" y="18">${c.top}</text>`;
+    if (c.lyric != null && !o.noLyrics) s += `<text class="lyric" x="${cx}" y="288">${c.lyric}</text>`;
+    s += `</g>`;
+  });
+  if (o.live) s += `<polyline class="trail" points=""/><g class="live" style="display:none"><circle class="halo" r="9" cx="${W - 40}" cy="0"/><circle r="9" cx="${W - 40}" cy="0"/><text x="${W - 40}" y="-15">you</text></g>`;
+  s += `</svg>`;
+  return s;
+}
+function staffApi(box, key, liveStaff){
+  const svg = $('svg', box), trail = [];
+  const W = svg ? svg.viewBox.baseVal.width : 0;
+  return {
+    col(i, cls){ $$('.col', svg).forEach(g => { if (+g.dataset.col === i){ g.classList.remove('cur', 'hit', 'miss'); if (cls) g.classList.add(cls); } }); },
+    colEl(i){ return $(`.col[data-col="${i}"] .nh`, svg); },
+    clear(){ $$('.col', svg).forEach(g => g.classList.remove('cur', 'hit', 'miss')); },
+    live(m, ok){
+      const g = $('.live', svg), pl = $('.trail', svg); if (!g) return;
+      if (m == null){ g.style.display = 'none'; trail.push(null); }
+      else {
+        const n = Math.round(m), sp = spell(n, key), st = liveStaff || (n >= 60 ? 'T' : 'B');
+        let y = (st === 'B' ? yB(sp.d) : yT(sp.d)) - (m - n) * HS;
+        y = Math.max(8, Math.min(292, y));
+        g.style.display = ''; g.setAttribute('transform', `translate(0 ${y.toFixed(1)})`); g.classList.toggle('ok', !!ok);
+        trail.push(y);
+      }
+      if (trail.length > 26) trail.shift();
+      const pts = []; for (let i = trail.length - 1, k = 0; i >= 0; i--, k++){ if (trail[i] == null) break; pts.push(`${(W - 40 - k * 2.4).toFixed(1)},${trail[i].toFixed(1)}`); }
+      pl.setAttribute('points', pts.join(' ')); pl.classList.toggle('ok', !!ok);
+    }
+  };
+}
+
+/* ===== "You are singing" box with your choir member ===== */
+function youHTML(){ return `<div class="youbox"><div class="youl">${kidSVG(avatar())}<div class="yousyl" data-y="syl">–</div></div><div><div class="tunerlbl"><span>${ic('down')} too low</span><span>just right</span><span>too high ${ic('up')}</span></div><div class="tuner" data-y="tuner"><div class="tz" data-y="zone"></div><div class="tn" data-y="needle"></div></div><div class="youhint"><span data-y="hint">${MIC.state === 'on' ? 'Sing and watch the marker.' : 'Turn on the microphone to see your voice.'}</span><span class="sig" data-y="sig" title="Microphone signal"><i></i><i></i><i></i></span></div></div></div>`; }
+function youUpdate(box, m, target, key, hd){
+  const syl = $('[data-y="syl"]', box), nd = $('[data-y="needle"]', box), hint = $('[data-y="hint"]', box), zone = $('[data-y="zone"]', box), tun = $('[data-y="tuner"]', box), sig = $('[data-y="sig"]', box);
+  if (!syl) return;
+  const lv = MIC.level, gate = gateLvl();
+  sig.className = 'sig ' + (lv < gate ? '' : lv < gate * 3 ? 'l1' : lv < gate * 8 ? 'l2' : 'l3');
+  zone.style.left = (50 - S.tol / 2) + '%'; zone.style.width = S.tol + '%';
+  const c = m == null ? null : target != null ? centsTo(m, target) : (m - Math.round(m)) * 100;
+  const ok = c != null && target != null && Math.abs(c) <= S.tol;
+  kidUpdate($('.youl', box) || box, m == null ? 0 : lv, m != null, ok);
+  if (m == null){
+    syl.textContent = '–'; nd.style.left = '50%'; nd.classList.remove('ok'); tun.classList.remove('ok');
+    hint.textContent = MIC.state !== 'on' ? 'Turn on the microphone to see your voice.' : (lv > gate ? 'I hear sound but no clear note. Sing a steady “loo”.' : 'I can’t hear you yet. Sing “loo”, or move a little closer.');
+    return;
+  }
+  syl.textContent = sylTxt(m, key, hd);
+  nd.style.left = (50 + Math.max(-50, Math.min(50, c / 2))) + '%';
+  nd.classList.toggle('ok', ok); tun.classList.toggle('ok', ok);
+  if (MIC.peak > 0.98) hint.textContent = 'A little too loud. Sing softer or move back.';
+  else if (target == null) hint.textContent = 'I hear you clearly.';
+  else if (ok) hint.textContent = '✓ Just right! Hold it.';
+  else if (c < -200) hint.textContent = '↑ Much too low. Go up.';
+  else if (c > 200) hint.textContent = '↓ Much too high. Go down.';
+  else hint.textContent = c < 0 ? '↑ A little low. Go up a bit.' : '↓ A little high. Come down a bit.';
+}
+
+/* ===== Sing-and-check exercise ===== */
+function singCheck(el, api, o){
+  const v = vt(), st = staffOf(v.part), hd = homeDo(o.key, v);
+  const cols = o.notes.map((m, i) => ({ notes: [{ m, st }], lyric: o.lyrics ? o.lyrics[i] : sylTxt(m, o.key, hd) }));
+  el.innerHTML = `<div class="stack">
+    <div class="staffbox">${staff(o.key, cols, { live: true })}</div>
+    <p class="say" data-s="say">${o.hearFirst ? 'Press <b>1 · Listen</b>. Then press <b>2 · Sing</b>.' : 'Press <b>1 · Hear do</b>. Read the notes, then press <b>2 · Sing</b>.'}</p>
+    <div class="btnrow"><button class="btn big" data-s="listen">${B('play', o.hearFirst ? '1 · Listen' : '1 · Hear do')}</button><button class="btn big sing" data-s="sing">${B('mic', '2 · Sing')}</button></div>
+    <div class="btnrow" data-s="self" hidden><button class="btn big good" data-s="yes">${B('check', 'I matched it')}</button><button class="btn big" data-s="no">${B('x', 'Not yet')}</button></div>
+    ${youHTML()}
+  </div>`;
+  const sa = staffApi($('.staffbox', el), o.key, st);
+  const say = (t, cls = '') => { const p = $('[data-s="say"]', el); p.innerHTML = t; p.className = 'say ' + cls; };
+  const singBtn = $('[data-s="sing"]', el), listenBtn = $('[data-s="listen"]', el);
+  const R = { on: false, idx: 0, hold: null, lastOk: 0, start: 0, hits: 0, done: false };
+  const gap = o.notes.length > 1 ? 0.75 : 1.4;
+  listenBtn.onclick = () => {
+    if (o.hearFirst){ seq(o.notes, gap); if (!R.on){ o.notes.forEach((_, i) => later(() => { if (!R.on){ sa.clear(); sa.col(i, 'cur'); } }, 50 + i * gap * 1000)); later(() => { if (!R.on) sa.clear(); }, o.notes.length * gap * 1000 + 100); } }
+    else { A(); stopSound(); tone(refDo(o.key, v), ctx.currentTime + 0.05, 1.2, 0.22); }
+  };
+  const finish = () => {
+    R.on = false; R.done = true; singBtn.classList.remove('live');
+    const n = o.notes.length, all = R.hits === n;
+    if (all){ say(`★ Wonderful! You sang ${n === 1 ? 'it' : 'all ' + n + ' notes'} right!`, 'good'); fanfare(); confetti(innerWidth / 2, innerHeight / 2.5, 70); kidReact(el, 'yay'); }
+    else { say(`You got ${R.hits} of ${n}. Press Listen and try again.`, 'bad'); boop(); kidReact(el, 'oops'); }
+    singBtn.innerHTML = B('redo', 'Try again');
+    o.onDone && o.onDone({ hits: R.hits, total: n });
+  };
+  const startSing = async () => {
+    const ok = await micOn();
+    if (!ok){
+      say(o.hearFirst ? 'Sing it out loud now ♪ Then press Listen again to compare.' : 'Sing it out loud now ♪ Then press Listen to check.', '');
+      $('[data-s="self"]', el).hidden = false;
+      if (!o.hearFirst){ listenBtn.innerHTML = B('play', 'Hear the answer'); listenBtn.onclick = () => seq(o.notes, 0.75); }
+      return;
+    }
+    stopSound(); sa.clear(); singBtn.classList.add('live');
+    Object.assign(R, { on: true, idx: 0, hold: null, start: performance.now(), hits: 0, done: false });
+    sa.col(0, 'cur'); say(`Sing <b>${cols[0].lyric}</b>`);
+  };
+  singBtn.onclick = startSing;
+  $('[data-s="yes"]', el).onclick = () => { $('[data-s="self"]', el).hidden = true; R.hits = o.notes.length; o.notes.forEach((_, i) => sa.col(i, 'hit')); finish(); };
+  $('[data-s="no"]', el).onclick = () => { $('[data-s="self"]', el).hidden = true; R.hits = 0; finish(); };
+  if (o.auto){
+    later(() => listenBtn.click(), 350);
+    if (MIC.state === 'on') later(() => { if (!R.on && !R.done) startSing(); }, 350 + (o.hearFirst ? o.notes.length * gap : 1.3) * 1000 + 250);
+  }
+  api.onPitch((m, lvl, now) => {
+    const target = R.on ? o.notes[R.idx] : (R.done ? null : o.notes[0]);
+    const ok = m != null && target != null && Math.abs(centsTo(m, target)) <= S.tol;
+    sa.live(m, ok); youUpdate(el, m, target, o.key, hd);
+    if (!R.on) return;
+    if (ok){ R.lastOk = now; if (R.hold == null) R.hold = now; if (now - R.hold > 500){ sa.col(R.idx, 'hit'); chime(); floaty(sa.colEl(R.idx), '✓'); burstAt(sa.colEl(R.idx), 14); R.hits++; next(); } }
+    else if (now - R.lastOk > 180){ R.hold = null; if (now - R.start > 7000){ sa.col(R.idx, 'miss'); next(); } }
+  });
+  function next(){
+    R.idx++; R.hold = null; R.start = performance.now();
+    if (R.idx >= o.notes.length) return finish();
+    sa.col(R.idx, 'cur'); say(`Good! Now sing <b>${cols[R.idx].lyric}</b>`);
+  }
+}
+/* 30-round game wrapper */
+function drill({ title, intro, gen, hearFirst = true, rounds = ROUNDS }){
+  return { title, render(el, api){
+    let item = 0, right = 0, cur = null;
+    el.innerHTML = `<div class="stack"><p class="lead">${intro}</p><div class="score"><span data-d="round"></span><span data-d="right" style="color:var(--gold)"></span></div><div class="miniprog"><div data-d="bar"></div></div><div data-d="box"></div><div class="btnrow"><button class="btn big" data-d="new">${B('right', 'Next one')}</button></div></div>`;
+    const upd = () => { $('[data-d="round"]', el).textContent = `${item} of ${rounds}`; $('[data-d="right"]', el).innerHTML = `${ic('star')} ${right} right`; $('[data-d="bar"]', el).style.width = (100 * item / rounds) + '%'; };
+    const make = auto => {
+      if (cur) api.score(cur.ok ? 1 : 0, 1);
+      if (item >= rounds){ cur = null; api.resetPitch(); clearTimers(); $('[data-d="box"]', el).innerHTML = `<div class="duo">${kidSVG(avatar(), 'yay')}<div><p class="huge">All ${rounds} done!</p><p class="lead">You got <b>${right}</b> right. Press <b>Next</b> at the bottom to continue, or play again.</p></div></div>`; fanfare(); confetti(); const b = $('[data-d="new"]', el); b.innerHTML = B('redo', 'Play again'); b.onclick = () => { item = 0; right = 0; b.innerHTML = B('right', 'Next one'); b.onclick = () => make(false); make(false); }; upd(); return; }
+      item++; cur = { ok: false }; const me = cur;
+      api.resetPitch(); clearTimers();
+      const g = gen();
+      singCheck($('[data-d="box"]', el), api, { key: g.key, notes: g.notes, lyrics: g.lyrics, hearFirst: g.hearFirst ?? hearFirst, auto, onDone: r => { if (r.hits === r.total && !me.ok){ me.ok = true; right++; upd(); later(() => { if (cur === me) make(true); }, 1800); } } });
+      upd();
+    };
+    $('[data-d="new"]', el).onclick = () => make(false);
+    make(false);
+  } };
+}
+const tips = items => `<ul class="tips">${items.map(([i, t]) => `<li><span class="ti">${ic(i)}</span><span>${t}</span></li>`).join('')}</ul>`;
+
+/* ===== Activities ===== */
+const ACTS = [];
+const act = a => (ACTS.push(a), a);
+
+act({ id: 'ready', title: 'Get ready', icon: 'sun', color: '#e09a00', blurb: 'Set the text size, test the sound and the microphone.', mins: 2, steps: [
+  { title: 'Welcome!', render(el){
+    el.innerHTML = `<div class="stack">
+      <div class="duo">${kidSVG(avatar(), 'singing')}<p class="lead">Hello! I’m <b>${kidName(avatar())}</b> from the choir. I listen to you sing and cheer when you get it right. We go <b>one small step at a time</b>. Press the big <b>Next</b> button at the bottom when you are ready.</p></div>
+      <div><label class="lead"><b>Is the writing easy to read?</b></label><div class="seg" id="sz"><button data-v="0">Normal</button><button data-v="1">Bigger</button><button data-v="2">Biggest</button></div></div>
+      ${tips([['play', '<b>Play</b> means listen.'], ['mic', '<b>Mic</b> means sing.'], ['notes', 'Notes are named <b>do re mi fa sol la si do</b>.']])}
+    </div>`;
+    const sz = $('#sz', el); const mark = () => $$('button', sz).forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === S.size)));
+    sz.onclick = e => { const b = e.target.closest('button'); if (!b) return; S.size = +b.dataset.v; save(); applySize(); mark(); }; mark();
+  } },
+  { title: 'Can you hear the sound?', render(el){
+    el.innerHTML = `<div class="stack center"><p class="lead">Press the button. You should hear a soft singing note.</p><div class="btnrow"><button class="btn big primary" id="t">${B('play', 'Play a note')}</button></div><p class="muted">No sound? Turn up the volume on your phone or computer, and switch off silent mode.</p></div>`;
+    $('#t', el).onclick = () => seq([60, 64, 67], 0.6);
+  } },
+  { title: 'Turn on the microphone', render(el, api){
+    el.innerHTML = `<div class="stack center">
+      <p class="lead">The microphone lets me <b>hear you sing</b>. Press the button and then press <b>Allow</b>. Stay quiet for one second while I listen to the room.</p>
+      <div class="btnrow"><button class="btn big sing" id="m">${B('mic', 'Turn on the microphone')}</button></div>
+      <div id="mr"></div>
+      <div id="tune" hidden class="stack">
+        <p class="lead">Now sing a long <b>“loo”</b>. When the bar is green and a note name shows, I hear you clearly.</p>
+        <div class="airbar" style="max-width:480px;margin:0 auto;width:100%"><div id="lv" style="width:0"></div></div>
+        <p class="huge" id="heard">–</p>
+        <div><label><b>Microphone sensitivity</b></label><div class="seg" id="gs" style="justify-content:center"><button data-v="1">Low (loud voice)</button><button data-v="2">Normal</button><button data-v="3">High (soft voice)</button></div></div>
+        <p class="muted">Tip: hold your phone about one arm’s length away. If the note name jumps around or I can’t hear you, try “High”.</p>
+      </div>
+    </div>`;
+    const gs = $('#gs', el); const mark = () => $$('button', gs).forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === S.gain)));
+    gs.onclick = e => { const b = e.target.closest('button'); if (!b) return; setGain(+b.dataset.v); mark(); }; mark();
+    let clear = 0, cheered = false;
+    const show = () => {
+      const r = $('#mr', el);
+      if (MIC.state === 'on'){ r.innerHTML = `<p class="notice green">${ic('check')} The microphone is on.</p>`; $('#tune', el).hidden = false; }
+      else if (MIC.state === 'blocked') r.innerHTML = `<p class="notice">The microphone can’t be used here.${FRAMED ? ' This shared page doesn’t allow it.' : ''} That’s okay: you can still listen, sing, and check yourself by ear. ${FRAMED ? 'For automatic checking, use “Get the full version” on the start page.' : 'To fix it, allow the microphone in your browser settings.'}</p>`;
+    };
+    $('#m', el).onclick = async () => { await micOn(); show(); };
+    show();
+    api.onPitch((m, lvl) => {
+      $('#lv', el).style.width = Math.min(100, lvl * 500) + '%';
+      $('#heard', el).textContent = m == null ? '–' : `♪ ${sylTxt(m, KEYS[0], m >= 58 ? 60 : 48)}`;
+      if (m != null){ clear++; if (clear > 45 && !cheered){ cheered = true; chime(); confetti(innerWidth / 2, innerHeight / 2, 50); api.hint('✓ I can hear you clearly! Press Next.'); } } else clear = Math.max(0, clear - 2);
+    });
+  } },
+  { title: 'One last tip', render(el){
+    el.innerHTML = `<div class="stack">${tips([['phones', '<b>Headphones</b> help a lot, especially for harmony practice.'], ['quiet', 'Find a <b>quiet</b> room.'], ['drop', 'Keep some <b>water</b> nearby.'], ['heart', 'Never push or strain. If it hurts, stop and rest.']])}<p class="notice green">You’re ready! Press <b>Finish</b> and continue your journey.</p></div>`;
+  } },
+] });
+
+function playAlong({ title, how, degs, lyrics, glide = false, gap = 0.45 }){
+  const offs = [0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0];
+  return { title, render(el){
+    const v = vt(); const start = v.lo + 1;
+    el.innerHTML = `<div class="stack">${tips(how)}<div class="duo">${kidSVG(avatar())}<div class="stack" style="gap:10px"><div class="score"><span data-p="r">Ready · ${offs.length} rounds, up and back down</span></div><div class="miniprog"><div data-p="bar"></div></div></div></div><div class="staffbox" data-p="st"></div><div class="btnrow"><button class="btn big sing" data-p="go">${B('play', 'Start · sing along')}</button><button class="btn big" data-p="stop">${B('stop', 'Stop')}</button></div></div>`;
+    let ms = [], key = KEYS[0];
+    const kid = $('.duo .kid', el);
+    const draw = r => {
+      const tonic = start + offs[r]; key = keyForPc(tonic);
+      ms = degs.map(d => dToMidi(d, tonic));
+      $('[data-p="st"]', el).innerHTML = staff(key, ms.map((m, i) => ({ notes: [{ m, st: staffOf(v.part) }], lyric: lyrics ? lyrics[i] : sylTxt(m, key, tonic) })), { colW: 56 });
+    };
+    draw(0);
+    let running = false;
+    const go = r => {
+      if (!running) return;
+      if (r >= offs.length){ running = false; kid.classList.remove('singing'); $('[data-p="r"]', el).textContent = '★ Done! Well sung.'; fanfare(); confetti(); kidReact(kid, 'yay'); return; }
+      draw(r); $('[data-p="r"]', el).textContent = `Round ${r + 1} of ${offs.length} · ${r < 6 ? 'going higher' : 'coming back down'}`; $('[data-p="bar"]', el).style.width = (100 * (r + 1) / offs.length) + '%';
+      const sa = staffApi($('[data-p="st"]', el), key, staffOf(v.part));
+      A(); let t = ctx.currentTime + 0.1; const t0 = t;
+      if (glide){ for (let i = 0; i < ms.length - 1; i++){ tone(ms[i], t, gap * 2, 0.2, ms[i + 1]); const k = i; later(() => { sa.clear(); sa.col(k, 'cur'); kid.classList.add('singing'); }, (t - t0 + 0.1) * 1000); t += gap * 2; } }
+      else { chord([ms[0], ms[0] + 4, ms[0] + 7], t, 0.8, 0.1); t += 1.0; ms.forEach((m, k) => { tone(m, t, gap * 0.95, 0.22); later(() => { sa.clear(); sa.col(k, 'cur'); kid.classList.add('singing'); }, (t - t0 + 0.1) * 1000); t += gap; }); }
+      later(() => { kid.classList.remove('singing'); sa.clear(); }, (t - t0 + 0.2) * 1000);
+      later(() => go(r + 1), (t - ctx.currentTime + 1.0) * 1000);
+    };
+    $('[data-p="go"]', el).onclick = () => { stopSound(); clearTimers(); running = true; go(0); };
+    $('[data-p="stop"]', el).onclick = () => { running = false; clearTimers(); stopSound(); kid.classList.remove('singing'); $('[data-p="r"]', el).textContent = 'Stopped'; };
+  } };
+}
+act({ id: 'warm', title: 'Warm up', icon: 'flame', color: '#e0561b', blurb: 'Wake up your body and voice gently before singing.', mins: 10, steps: [
+  { title: 'Loosen your body', render(el){
+    el.innerHTML = `<div class="stack">${tips([['body', 'Roll your shoulders back slowly, 5 times.'], ['smile', 'Gently turn your head left and right.'], ['spark', 'Open your mouth wide like a yawn, then relax.'], ['hand', 'Shake your hands loose.']])}<div class="bigclock" id="c">0:30</div><div class="btnrow"><button class="btn big primary" id="g">${B('play', 'Start 30-second timer')}</button></div></div>`;
+    $('#g', el).onclick = () => { clearTimers(); let n = 30; const tk = () => { $('#c', el).textContent = `0:${String(n).padStart(2, '0')}`; if (n-- > 0) later(tk, 1000); else { $('#c', el).textContent = '✓ Done'; chime(); confetti(); } }; tk(); };
+  } },
+  playAlong({ title: 'Sigh down like a slide', how: [['wind', 'Breathe in through your nose.'], ['down', 'Sigh out “haaa” from high to low, like a slide.'], ['heart', 'Keep it easy and relaxed.']], degs: [7, 0], lyrics: ['haaa', '…'], glide: true, gap: 1.0 }),
+  playAlong({ title: 'Hum “mmm”', how: [['smile', 'Close your lips softly and hum “mmm”.'], ['spark', 'Feel your lips tickle.'], ['notes', 'Follow the notes: do re mi fa sol fa mi re do.']], degs: [0,1,2,3,4,3,2,1,0] }),
+  playAlong({ title: 'Lip trill “brrr”', how: [['wind', 'Blow through loose lips like a motorboat: “brrr”.'], ['up', 'Slide up and down with the sound.'], ['hand', 'If it’s hard, press your cheeks lightly with your fingers.']], degs: [0, 4, 7, 4, 0], lyrics: ['brrr', '', '', '', ''], glide: true, gap: 0.6 }),
+  playAlong({ title: 'Mee – may – mah – moh – moo', how: [['notes', 'Sing one vowel on each note.'], ['smile', 'Keep your jaw loose and your mouth tall.']], degs: [0, 2, 4, 2, 0], lyrics: ['mee', 'may', 'mah', 'moh', 'moo'], gap: 0.55 }),
+  playAlong({ title: 'Bouncy “ya-ya-ya”', how: [['spark', 'Short and bouncy, like laughing on notes.'], ['smile', 'Keep a smile in your voice.']], degs: [0, 2, 4, 7, 4, 2, 0], lyrics: ['ya', 'ya', 'ya', 'ya', 'ya', 'ya', 'yaa'], gap: 0.35 }),
+  playAlong({ title: 'Do re mi up and down', how: [['notes', 'Sing the names: do re mi fa sol la si do and back.'], ['heart', 'Smooth and connected, like one long line.']], degs: [0,1,2,3,4,5,6,7,6,5,4,3,2,1,0], gap: 0.4 }),
+] });
+
+act({ id: 'breath', title: 'Breathing', icon: 'wind', color: '#128ea1', blurb: 'Breathe low and steady so your notes last longer.', mins: 8, steps: [
+  { title: 'Sit or stand tall', render(el){
+    el.innerHTML = `<div class="stack">${tips([['feet', 'Feet flat on the floor.'], ['body', 'Back straight, shoulders relaxed and low.'], ['hand', 'Put one hand on your belly.'], ['wind', 'When you breathe in, your <b>belly</b> moves out. Your shoulders stay down.']])}</div>`;
+  } },
+  { title: 'Belly breathing', render(el){
+    el.innerHTML = `<div class="stack center"><p class="lead">Follow the circle. In through the nose, out slowly through the mouth.</p><div class="breath" id="br"><span class="ripple"></span><span class="ripple r2"></span><span class="ripple r3"></span><div class="circle" id="ci"></div></div><p class="huge" id="ph">Ready?</p><div class="btnrow"><button class="btn big primary" id="go">${B('play', 'Start (6 breaths)')}</button></div></div>`;
+    const ci = $('#ci', el), ph = $('#ph', el), br = $('#br', el);
+    $('#go', el).onclick = () => {
+      clearTimers(); let t = 0; br.classList.add('on');
+      const phases = [['Breathe in…', 4, 2.1, false], ['Hold', 2, 2.1, false], ['Breathe out slowly…', 6, 1, true]];
+      for (let c = 0; c < 6; c++) phases.forEach(([txt, secs, sc, out]) => {
+        later(() => { ph.textContent = `${txt} (${c + 1} of 6)`; ci.classList.toggle('out', out); ci.style.transitionDuration = secs + 's'; ci.style.transform = `scale(${sc})`; for (let k = 0; k < secs; k++) later(() => { ci.textContent = secs - k; }, k * 1000); }, t * 1000);
+        t += secs;
+      });
+      later(() => { ph.textContent = '✓ Lovely. Well done!'; ci.textContent = ''; br.classList.remove('on'); chime(); confetti(); }, t * 1000);
+    };
+  } },
+  { title: 'Long hiss: “sssss”', render(el, api){
+    el.innerHTML = `<div class="stack center"><p class="lead">Breathe in for 4 counts. Then hiss <b>“sssss”</b> slowly and evenly, like a tyre losing air. Make it last! The green bar is your air.</p><div class="airbar"><div id="air"></div></div><div class="bigclock" id="c">0.0 s</div><p class="lead" id="msg">Press Start.</p><div class="btnrow"><button class="btn big primary" id="go">${B('play', 'Start')}</button><button class="btn big" id="st">${B('stop', 'Stop')}</button></div><p class="muted" id="best"></p></div>`;
+    let t0 = null, quiet = null, runningH = false;
+    const best = () => { $('#best', el).textContent = S.best.hiss ? `Your best: ${S.best.hiss.toFixed(1)} seconds` : ''; }; best();
+    const goal = 30;
+    const stop = () => {
+      if (!runningH) return; runningH = false; const s = (performance.now() - t0) / 1000;
+      $('#c', el).textContent = s.toFixed(1) + ' s';
+      $('#msg', el).textContent = s >= 25 ? '★ Excellent breath control!' : s >= 15 ? '✓ Good! Try for 25 seconds.' : 'Keep practising. Try to hiss more gently.';
+      api.score(Math.min(s, 25), 25);
+      if (!S.best.hiss || s > S.best.hiss){ S.best.hiss = s; save(); best(); floaty($('#c', el), 'New best!', 'var(--gold)'); fanfare(); confetti(); } else chime();
+    };
+    const tk = () => { if (!runningH) return; const s = (performance.now() - t0) / 1000; $('#c', el).textContent = s.toFixed(1) + ' s'; $('#air', el).style.width = Math.max(0, 100 - s / goal * 100) + '%'; later(tk, 100); };
+    $('#go', el).onclick = () => { clearTimers(); runningH = false; let n = 4; $('#air', el).style.width = '100%'; const cnt = () => { $('#msg', el).textContent = `Breathe in… ${n}`; if (n-- > 0) later(cnt, 1000); else { $('#msg', el).textContent = 'Hiss now: sssss…'; t0 = performance.now(); runningH = true; quiet = null; tk(); } }; cnt(); };
+    $('#st', el).onclick = stop;
+    api.onPitch((m, lvl, now) => {
+      if (!runningH || MIC.state !== 'on' || now - t0 < 1500) return;
+      if (lvl < Math.max(0.004, MIC.floor * 1.8)){ if (quiet == null) quiet = now; if (now - quiet > 800) stop(); } else quiet = null;
+    });
+  } },
+  { title: 'Hold one note', render(el, api){
+    const key = KEYS[0], d = refDo(key), hd = homeDo(key);
+    el.innerHTML = `<div class="stack center"><p class="lead">Listen to <b>do</b>. Take a deep belly breath and sing <b>“ah”</b> on that note for as long as you can. Keep it steady.</p><div class="staffbox">${staff(key, [{ notes: [{ m: d, st: staffOf(vt().part) }], lyric: 'do' }], { live: true })}</div><div class="bigclock" id="c">0.0 s</div><p class="lead" id="msg">Press Hear do, then Start.</p><div class="btnrow"><button class="btn big" id="h">${B('play', 'Hear do')}</button><button class="btn big sing" id="go">${B('mic', 'Start')}</button><button class="btn big" id="st">${B('stop', 'Stop')}</button></div>${youHTML()}<p class="muted" id="best"></p></div>`;
+    const sa = staffApi($('.staffbox', el), key, staffOf(vt().part));
+    let state = 'idle', t0 = 0, quiet = null, frames = 0, good = 0;
+    const best = () => { $('#best', el).textContent = S.best.hold ? `Your best: ${S.best.hold.toFixed(1)} seconds` : ''; }; best();
+    $('#h', el).onclick = () => seq([d], 1.5);
+    const stop = () => {
+      if (state !== 'sing' && state !== 'wait') return;
+      const s = state === 'sing' ? (performance.now() - t0) / 1000 : 0; state = 'idle'; $('#go', el).classList.remove('live');
+      const steady = frames ? Math.round(100 * good / frames) : null;
+      $('#c', el).textContent = s.toFixed(1) + ' s';
+      $('#msg', el).textContent = `You held it for ${s.toFixed(1)} seconds${steady != null && MIC.state === 'on' ? ` and stayed on the note ${steady}% of the time` : ''}. ${s >= 20 ? '★ Superb!' : s >= 12 ? '✓ Good!' : 'Try a bigger belly breath first.'}`;
+      api.score(Math.min(s, 20), 20);
+      if (s > (S.best.hold || 0)){ S.best.hold = s; save(); best(); floaty($('#c', el), 'New best!', 'var(--gold)'); fanfare(); confetti(); kidReact(el, 'yay'); } else chime();
+    };
+    $('#go', el).onclick = async () => {
+      const ok = await micOn(); frames = good = 0; $('#go', el).classList.add('live');
+      if (ok){ state = 'wait'; $('#msg', el).textContent = 'Start singing “ah” on do…'; }
+      else { state = 'sing'; t0 = performance.now(); $('#msg', el).textContent = 'Sing now! Press Stop when you run out of air.'; later(function tk(){ if (state === 'sing'){ $('#c', el).textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s'; later(tk, 100); } }, 100); }
+    };
+    $('#st', el).onclick = stop;
+    api.onPitch((m, lvl, now) => {
+      const ok = m != null && Math.abs(centsTo(m, d)) <= S.tol * 1.3;
+      sa.live(m, ok); youUpdate(el, m, d, key, hd);
+      if (state === 'wait' && m != null){ state = 'sing'; t0 = now; quiet = null; }
+      if (state === 'sing' && MIC.state === 'on'){
+        $('#c', el).textContent = ((now - t0) / 1000).toFixed(1) + ' s';
+        if (m == null){ if (quiet == null) quiet = now; if (now - quiet > 700) stop(); } else { quiet = null; frames++; if (ok) good++; }
+      }
+    });
+  } },
+  { title: 'Bouncy “ha! ha! ha!”', render(el){
+    el.innerHTML = `<div class="stack center"><p class="lead">On every beat, push a short <b>“ha!”</b> from your belly. Your hand on your belly should bounce.</p><div class="beats" id="bt"><span>1</span><span>2</span><span>3</span><span>4</span></div><p class="huge" id="ph">Ready?</p><div class="btnrow"><button class="btn big primary" id="go">${B('play', 'Start')}</button><button class="btn big" id="st">${B('stop', 'Stop')}</button></div></div>`;
+    const spans = $$('#bt span', el);
+    const bars = ['ha! ha! ha! ha!', 'ha! ha! ha! ha!', 'ha! – ha! –', 'haaaaaaa (long)', 'ha! ha! ha! ha!', 'ha! – ha! –', 'ha! ha! ha! ha!', 'haaaaaaa (long)'];
+    $('#go', el).onclick = () => {
+      clearTimers(); A(); const beat = 60 / 76; const t0 = ctx.currentTime + 0.3;
+      for (let b = 0; b < 32; b++){
+        click(t0 + b * beat, b % 4 === 0);
+        later(() => { spans.forEach((s, i) => s.classList.toggle('on', i === b % 4)); if (b % 4 === 0) $('#ph', el).textContent = bars[b / 4]; }, (0.3 + b * beat) * 1000);
+      }
+      later(() => { spans.forEach(s => s.classList.remove('on')); $('#ph', el).textContent = '✓ Great energy!'; chime(); confetti(); }, (0.3 + 32 * beat) * 1000);
+    };
+    $('#st', el).onclick = () => { clearTimers(); stopSound(); spans.forEach(s => s.classList.remove('on')); $('#ph', el).textContent = 'Stopped'; };
+  } },
+] });
+
+const VF = { lo: null, hi: null };
+function rangeStep(which){
+  const isLow = which === 'low';
+  return { title: isLow ? 'Your lowest comfortable note' : 'Your highest comfortable note', render(el, api){
+    const key = KEYS[0], high = S.speak !== 'low', hd = high ? 60 : 48;
+    let cur = isLow ? (high ? 62 : 50) : (high ? 67 : 55), lastOk = null, found = VF[which], sa;
+    el.innerHTML = `<div class="stack">
+      <p class="lead">${isLow ? 'Sing “ah” at an easy pitch. Then go <b>down</b> step by step. Hold each note for 2 seconds. Stop at the lowest note that still feels <b>easy</b>.' : 'Sing “ah” at an easy pitch. Then go <b>up</b> step by step. Hold each note for 2 seconds. Stop at the highest note that still feels <b>easy</b>, not screamy.'}</p>
+      <div class="staffbox" data-r="st"></div>
+      <p class="say" data-r="val"></p>
+      <div data-r="micmode" class="stack"><div class="btnrow"><button class="btn big sing" data-r="mic">${B('mic', 'Use the microphone')}</button><button class="btn big" data-r="reset">${B('redo', 'Start over')}</button></div>${youHTML()}</div>
+      <div data-r="tapmode" class="stack" hidden>
+        <p class="notice blue">No microphone? No problem. Listen to each note and tell me if you can sing it easily.</p>
+        <div class="btnrow"><button class="btn big" data-r="play">${B('play', 'Play the note')}</button></div>
+        <div class="btnrow"><button class="btn big good" data-r="yes">${B('check', 'Easy for me')}</button><button class="btn big" data-r="no">${B('x', `Too ${isLow ? 'low' : 'high'} / hard`)}</button></div>
+      </div>
+      <div class="btnrow"><button class="btn" data-r="switch">Use “listen and tap” instead</button></div>
+    </div>`;
+    const draw = () => {
+      const notes = [];
+      if (found != null) notes.push({ notes: [{ m: found, st: found >= 60 ? 'T' : 'B', me: true }], lyric: sylTxt(found, key, hd), top: isLow ? 'lowest' : 'highest' });
+      $('[data-r="st"]', el).innerHTML = staff(key, notes.length ? notes : [{ notes: [], lyric: '' }], { live: true, noParts: true });
+      sa = staffApi($('[data-r="st"]', el), key, null);
+      $('[data-r="val"]', el).innerHTML = found != null ? `Your ${isLow ? 'lowest' : 'highest'} note: <b>${sylTxt(found, key, hd)}</b> (orange)` : 'Not found yet';
+    };
+    draw();
+    const tapMode = () => { $('[data-r="micmode"]', el).hidden = true; $('[data-r="tapmode"]', el).hidden = false; $('[data-r="switch"]', el).hidden = true; seq([cur], 1.4); };
+    $('[data-r="switch"]', el).onclick = tapMode;
+    if (MIC.state === 'blocked') tapMode();
+    $('[data-r="mic"]', el).onclick = async () => { if (!(await micOn())) tapMode(); };
+    $('[data-r="reset"]', el).onclick = () => { found = VF[which] = null; draw(); };
+    $('[data-r="play"]', el).onclick = () => seq([cur], 1.4);
+    $('[data-r="yes"]', el).onclick = () => { lastOk = cur; found = VF[which] = cur; draw(); chime(); cur += isLow ? -2 : 2; if (cur < 36 || cur > 86){ api.hint('That is a very wide range! Press Next.'); return; } later(() => seq([cur], 1.4), 400); };
+    $('[data-r="no"]', el).onclick = () => { found = VF[which] = lastOk != null ? lastOk : cur + (isLow ? 2 : -2); draw(); api.hint('✓ Got it. Press Next.'); };
+    const win = [];
+    api.onPitch((m, lvl, now) => {
+      sa && sa.live(m, false); youUpdate(el, m, null, key, hd);
+      if (m == null){ win.length = 0; return; }
+      win.push({ m, t: now }); while (win.length && now - win[0].t > 900) win.shift();
+      if (win.length > 20 && now - win[0].t > 800){
+        const avg = win.reduce((a, x) => a + x.m, 0) / win.length;
+        if (win.every(x => Math.abs(x.m - avg) < 0.5)){
+          const n = Math.round(avg);
+          if (found == null || (isLow ? n < found : n > found)){ found = VF[which] = n; draw(); chime(); }
+        }
+      }
+    });
+  } };
+}
+function classify(lo, hi){
+  let c = Object.keys(VT);
+  if (S.speak === 'low') c = c.filter(k => ['T', 'B'].includes(VT[k].part));
+  if (S.speak === 'high') c = c.filter(k => ['S', 'A'].includes(VT[k].part));
+  return c.map(k => ({ k, s: Math.abs(lo - VT[k].lo) + 1.3 * Math.abs(hi - VT[k].hi) })).sort((a, b) => a.s - b.s).map(x => x.k);
+}
+function vtPicker(el, onPick){
+  el.innerHTML = `<div class="vtgrid">${Object.entries(VT).map(([k, v]) => `<button class="vtbtn" data-k="${k}" aria-pressed="${S.vt === k}"><span><b>${v.name} (${k})</b><span>${v.part === 'S' || v.part === 'A' ? 'Treble clef' : 'Bass clef'}</span></span></button>`).join('')}</div>`;
+  el.onclick = e => { const b = e.target.closest('.vtbtn'); if (!b) return; S.vt = b.dataset.k; save(); updChips(); $$('.vtbtn', el).forEach(x => x.setAttribute('aria-pressed', String(x === b))); chime(); onPick && onPick(b.dataset.k); };
+}
+act({ id: 'voice', title: 'Find my voice type', icon: 'search', color: '#7a4fd0', blurb: 'Soprano 1 or 2, Alto 1 or 2, Tenor 1 or 2, Baritone or Bass?', mins: 5, steps: [
+  { title: 'About your voice', render(el){
+    el.innerHTML = `<div class="stack"><p class="lead">We will find your <b>lowest</b> and <b>highest</b> easy notes. From that, I suggest your choir part.</p><p class="lead"><b>Is your speaking voice higher or lower?</b></p><div class="seg" id="sp"><button data-v="high">Higher (most women and children)</button><button data-v="low">Lower (most men)</button></div><p class="muted">Only sing what feels easy. Never strain.</p></div>`;
+    const sp = $('#sp', el); const mark = () => $$('button', sp).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === S.speak)));
+    sp.onclick = e => { const b = e.target.closest('button'); if (!b) return; S.speak = b.dataset.v; save(); mark(); }; mark();
+  } },
+  rangeStep('low'),
+  rangeStep('high'),
+  { title: 'Your voice type', render(el){
+    const key = KEYS[0];
+    if (VF.lo == null || VF.hi == null || VF.hi - VF.lo < 5){
+      el.innerHTML = `<div class="stack"><p class="notice">I couldn’t measure both notes. Go back and try again, or choose your part below if you already know it.</p><div id="pk"></div></div>`;
+      vtPicker($('#pk', el)); return;
+    }
+    const [best, alt] = classify(VF.lo, VF.hi);
+    S.vt = best; save(); updChips();
+    const hd = S.speak === 'low' ? 48 : 60, v = VT[best];
+    el.innerHTML = `<div class="stack">
+      <div class="notice green reveal">${kidSVG(avatar(), 'yay')}<p>${kidName(avatar())} says: you are most likely a</p><p class="result-big">${v.name} (${best})</p><p>${v.about}</p></div>
+      <div class="staffbox">${staff(key, [
+        { notes: [{ m: VF.lo, st: VF.lo >= 60 ? 'T' : 'B', me: true }], lyric: sylTxt(VF.lo, key, hd), top: 'your lowest' },
+        { notes: [{ m: VF.hi, st: VF.hi >= 60 ? 'T' : 'B', me: true }], lyric: sylTxt(VF.hi, key, hd), top: 'your highest' },
+        { notes: [{ m: v.lo, st: v.lo >= 60 ? 'T' : 'B' }], lyric: sylTxt(v.lo, key, hd), top: best + ' low' },
+        { notes: [{ m: v.hi, st: v.hi >= 60 ? 'T' : 'B' }], lyric: sylTxt(v.hi, key, hd), top: best + ' high' },
+      ], { colW: 92 })}</div>
+      <p class="lead">You could also sing <b>${VT[alt].name} (${alt})</b>. Your choir director can help decide.</p>
+      <p><b>Want a different part?</b> Tap one:</p><div id="pk"></div>
+    </div>`;
+    vtPicker($('#pk', el));
+    later(() => { fanfare(); confetti(innerWidth / 2, innerHeight / 3, 120); }, 300);
+  } },
+] });
+
+act({ id: 'pitch', title: 'Sing the notes', icon: 'target', color: '#d6336c', blurb: 'Hear a note, sing it back, and see if it matches. Five levels, 30 rounds each.', mins: 20, steps: [
+  { title: 'How to read the notes', render(el){
+    const key = KEYS[0], v = vt(), w = degWindow(key, 7, v), ms = [0,1,2,3,4,5,6,7].map(d => dToMidi(w.s + d, w.hd));
+    el.innerHTML = `<div class="stack"><p class="lead">This is the <b>grand staff</b>. Sopranos and altos read the top lines (<b>treble clef</b> <span style="font-family:var(--music)">𝄞</span>). Tenors and basses read the bottom lines (<b>bass clef</b> <span style="font-family:var(--music)">𝄢</span>).</p><p class="lead">You are <b>${v.name}</b>, so your notes are on the <b>${staffOf(v.part) === 'T' ? 'top' : 'bottom'}</b> lines. <b>Higher on the lines = higher sound.</b> The word under the note is what you sing.</p><div class="staffbox" id="sb">${staff(key, ms.map(m => ({ notes: [{ m, st: staffOf(v.part) }], lyric: sylTxt(m, key, w.hd) })), { colW: 56 })}</div><div class="btnrow"><button class="btn big primary" id="p">${B('play', 'Play do re mi fa sol la si do')}</button></div></div>`;
+    const sa = staffApi($('#sb', el), key, staffOf(v.part));
+    $('#p', el).onclick = () => { clearTimers(); seq(ms, 0.6); ms.forEach((_, i) => later(() => { sa.clear(); sa.col(i, 'cur'); }, 50 + i * 600)); later(() => sa.clear(), ms.length * 600 + 200); };
+  } },
+  drill({ title: 'Level 1 · One note', intro: 'Listen to one note. Sing it back on “loo” or on its name.', gen: () => ({ key: KEYS[0], notes: pattern(1, KEYS[0]) }) }),
+  drill({ title: 'Level 2 · Two notes', intro: 'Two notes close together. Sing them in order.', gen: () => ({ key: KEYS[0], notes: pattern(2, KEYS[0]) }) }),
+  drill({ title: 'Level 3 · Three notes', intro: 'Short patterns like do – mi – sol.', gen: () => ({ key: KEYS[0], notes: pattern(3, KEYS[0]) }) }),
+  drill({ title: 'Level 4 · A short tune', intro: 'Five notes in a row. Take a breath first!', gen: () => ({ key: KEYS[0], notes: pattern(4, KEYS[0]) }) }),
+  drill({ title: 'Level 5 · Read it yourself', intro: 'This time you only hear <b>do</b>. Read the names and find the notes yourself. This is sight-singing!', hearFirst: false, gen: () => ({ key: KEYS[0], notes: pattern(rnd([3, 4]), KEYS[0]) }) }),
+] });
+
+const curKey = () => KEYS[S.keyIdx] || KEYS[0];
+act({ id: 'keys', title: 'Sing in other keys', icon: 'key', color: '#0f8a6a', blurb: 'Sharps ♯ and flats ♭ move do. Learn to find do in every key.', mins: 20, steps: [
+  { title: 'Choose a key', render(el){
+    el.innerHTML = `<div class="stack"><p class="lead">The sharps ♯ or flats ♭ at the start of the lines are the <b>key signature</b>. They tell you where <b>do</b> is (orange). Pick one to practise. Start with few sharps or flats.</p><div class="keygrid">${KEYS.map((k, i) => `<button class="keybtn" data-i="${i}" aria-pressed="${i === S.keyIdx}">${staff(k, [{ notes: [{ m: refDo(k, VT.S2), st: 'T', me: true }] }], { noLyrics: true, noParts: true, colW: 40, minW: 210 })}<span>${keyName(k)}</span></button>`).join('')}</div></div>`;
+    $('.keygrid', el).onclick = e => { const b = e.target.closest('.keybtn'); if (!b) return; S.keyIdx = +b.dataset.i; save(); $$('.keybtn', el).forEach(x => x.setAttribute('aria-pressed', String(x === b))); A(); stopSound(); tone(refDo(curKey()), ctx.currentTime + 0.03, 1, 0.22); burstAt(b, 12); };
+  } },
+  { title: 'Meet do in this key', render(el){
+    const key = curKey(), v = vt(), w = degWindow(key, 7, v), ms = [0,1,2,3,4,5,6,7].map(d => dToMidi(w.s + d, w.hd));
+    el.innerHTML = `<div class="stack"><p class="lead">Key: <b>${keyName(key)}</b>. Here is the scale from do to the high do. The <b>orange</b> notes are do.</p><div class="staffbox" id="sb">${staff(key, ms.map(m => ({ notes: [{ m, st: staffOf(v.part), me: mod(m - key.pc, 12) === 0 }], lyric: sylTxt(m, key, w.hd) })), { colW: 56 })}</div><div class="btnrow"><button class="btn big primary" id="p">${B('play', 'Play the scale')}</button><button class="btn big" id="c">${B('play', 'Hear the key')}</button></div></div>`;
+    const sa = staffApi($('#sb', el), key, staffOf(v.part));
+    $('#p', el).onclick = () => { clearTimers(); seq(ms, 0.55); ms.forEach((_, i) => later(() => { sa.clear(); sa.col(i, 'cur'); }, 50 + i * 550)); later(() => sa.clear(), ms.length * 550 + 200); };
+    $('#c', el).onclick = () => cadence(key);
+  } },
+  drill({ title: 'Do – mi – sol patterns', intro: 'The happy chord notes of this key, in different orders.', gen: () => { const k = curKey(), w = degWindow(k, 7); return { key: k, notes: rnd([[0,2,4,7],[7,4,2,0],[0,4,7],[4,2,0],[0,2,4,2,0],[2,4,7],[7,4,2],[4,7,4]]).map(d => dToMidi(w.s + d, w.hd)) }; } }),
+  drill({ title: 'Scale steps', intro: 'Pieces of the scale: do re mi fa sol la si do, going up or down.', gen: () => { const k = curKey(), w = degWindow(k, 7), a = Math.floor(Math.random() * 4), len = 4 + Math.floor(Math.random() * 3), up = Math.random() < 0.5; let ds = Array.from({ length: Math.min(len, 8 - a) }, (_, i) => a + i); if (!up) ds = ds.reverse(); return { key: k, notes: ds.map(d => dToMidi(w.s + d, w.hd)) }; } }),
+  drill({ title: 'Read a tune in this key', intro: 'You only hear do. Read the tune and sing it.', hearFirst: false, gen: () => ({ key: curKey(), notes: pattern(4, curKey()) }) }),
+  drill({ title: 'Key jump!', intro: 'Every round uses a <b>different key</b>. Look at the key signature, hear do, and sing.', hearFirst: false, gen: () => { const k = rnd(KEYS); return { key: k, notes: pattern(3, k) }; } }),
+] });
+
+function quizStep({ title, intro, rounds = ROUNDS, make }){
+  return { title, render(el, api){
+    let r = 0, right = 0, q = null, answered = false, inRow = 0;
+    el.innerHTML = `<div class="stack"><p class="lead">${intro}</p><div class="score"><span data-q="r"></span><span data-q="s" style="color:var(--gold)"></span><span data-q="k" style="color:var(--sing)"></span></div><div class="miniprog"><div data-q="bar"></div></div><div class="duo">${kidSVG(avatar())}<div class="stack" style="gap:12px"><div class="btnrow"><button class="btn big primary" data-q="play">${B('play', 'Play again')}</button></div><p class="say" data-q="fb"></p></div></div><div class="choices" data-q="ch"></div><div class="btnrow"><button class="btn big" data-q="next">${B('right', 'Next question')}</button></div></div>`;
+    const kid = $('.duo .kid', el);
+    const upd = () => { $('[data-q="r"]', el).textContent = `Question ${Math.min(r + 1, rounds)} of ${rounds}`; $('[data-q="s"]', el).innerHTML = `${ic('star')} ${right} right`; $('[data-q="k"]', el).innerHTML = inRow > 1 ? `${ic('flame')} ${inRow} in a row` : ''; $('[data-q="bar"]', el).style.width = (100 * r / rounds) + '%'; };
+    const ask = () => {
+      clearTimers();
+      if (r >= rounds){ $('[data-q="fb"]', el).textContent = `★ You got ${right} of ${rounds}! Press Next question to play again.`; $('[data-q="ch"]', el).innerHTML = ''; fanfare(); confetti(); kidReact(kid, 'yay'); r = 0; right = 0; inRow = 0; return; }
+      q = make(); answered = false; upd();
+      $('[data-q="ch"]', el).innerHTML = q.choices.map((c, i) => `<button class="btn" data-i="${i}" style="animation-delay:${i * 0.04}s">${c}</button>`).join('');
+      const fb = $('[data-q="fb"]', el); fb.textContent = 'Listen, then tap your answer.'; fb.className = 'say';
+      kid.classList.add('singing'); later(() => kid.classList.remove('singing'), 2200);
+      q.play();
+    };
+    $('[data-q="play"]', el).onclick = () => q && q.play();
+    $('[data-q="next"]', el).onclick = ask;
+    $('[data-q="ch"]', el).onclick = e => {
+      const b = e.target.closest('button'); if (!b || answered) return; answered = true;
+      const i = +b.dataset.i, ok = i === q.answer; if (ok){ right++; inRow++; } else inRow = 0; r++;
+      api.score(ok ? 1 : 0, 1);
+      const btns = $$('button', $('[data-q="ch"]', el));
+      b.classList.add(ok ? 'right' : 'wrong'); if (!ok) btns[q.answer].classList.add('right');
+      const fb = $('[data-q="fb"]', el); fb.className = 'say ' + (ok ? 'good' : 'bad');
+      fb.textContent = ok ? (inRow > 2 ? `✓ Correct! ${inRow} in a row!` : '✓ Correct!') : `Not quite. It was “${btns[q.answer].textContent.trim()}”.`;
+      if (ok){ chime(); burstAt(b, 20); floaty(b, '+1'); kidReact(kid, 'yay'); } else { boop(); kidReact(kid, 'oops'); }
+      upd(); later(ask, ok ? 1300 : 2200);
+    };
+    ask();
+  } };
+}
+const SCALE7 = ['do', 're', 'mi', 'fa', 'sol', 'la', 'si'];
+act({ id: 'ears', title: 'Ear games', icon: 'ear', color: '#b87400', blurb: 'Listen and tap. Four games, 30 questions each. No microphone needed.', mins: 15, steps: [
+  quizStep({ title: 'Higher or lower?', intro: 'You will hear two notes. Is the second note higher or lower?', make(){
+    const v = vt(); const a = v.lo + 3 + Math.floor(Math.random() * (v.hi - v.lo - 8)); const up = Math.random() < 0.5; const b = a + (up ? 1 : -1) * (1 + Math.floor(Math.random() * 4));
+    return { choices: [`${ic('up')} Higher`, `${ic('down')} Lower`], answer: up ? 0 : 1, play: () => seq([a, b], 1.0) };
+  } }),
+  quizStep({ title: 'Which name? (do, mi, sol)', intro: 'First you hear <b>do</b>. Then a second note. What is its name?', make(){
+    const k = KEYS[0], w = degWindow(k, 7), opts = [0, 2, 4], pick = Math.floor(Math.random() * 3);
+    return { choices: ['do', 'mi', 'sol'], answer: pick, play: () => seq([dToMidi(w.s, w.hd), dToMidi(w.s + opts[pick], w.hd)], 1.0) };
+  } }),
+  quizStep({ title: 'Which name? (whole scale)', intro: 'First <b>do</b>, then another note: do re mi fa sol la si. What is its name?', make(){
+    const k = KEYS[0], w = degWindow(k, 7), pick = Math.floor(Math.random() * 7);
+    return { choices: SCALE7, answer: pick, play: () => seq([dToMidi(w.s, w.hd), dToMidi(w.s + pick, w.hd)], 1.0) };
+  } }),
+  quizStep({ title: 'Which one is out of tune?', intro: 'You will hear the same note twice. One is a little <b>out of tune</b>. Which one? This trains your ear for blending.', make(){
+    const v = vt(), m = v.lo + 5 + Math.floor(Math.random() * 6), first = Math.random() < 0.5, off = (Math.random() < 0.5 ? 1 : -1) * 0.35;
+    return { choices: ['The first one', 'The second one'], answer: first ? 0 : 1, play: () => { A(); stopSound(); const t = ctx.currentTime + 0.05; tone(first ? m + off : m, t, 1.1, 0.22); tone(first ? m : m + off, t + 1.4, 1.1, 0.22); } };
+  } }),
+] });
+
+const PR = { S: [61, 77], A: [56, 72], T: [49, 67], B: [41, 60] };
+const PC = { S: 69, A: 63, T: 57, B: 49 };
+const CH = { I: { r: 0, t: [0,4,7], n: 'Do chord' }, ii: { r: 2, t: [2,5,9], n: 'Re chord' }, IV: { r: 5, t: [5,9,0], n: 'Fa chord' }, V: { r: 7, t: [7,11,2], n: 'Sol chord' }, vi: { r: 9, t: [9,0,4], n: 'La chord' } };
+function voiceChord(ck, key, prev){
+  const v = vt(), ch = CH[ck], pc = key.pc;
+  const rng = { ...PR, [v.part]: [v.lo + 1, v.hi - 2] }, ctr = { ...PC, [v.part]: (v.lo + v.hi) / 2 };
+  const cand = p => { const a = []; for (let m = rng[p][0]; m <= rng[p][1]; m++){ const x = mod(m - pc, 12); if (p === 'B' ? x === ch.r : ch.t.includes(x)) a.push(m); } return a; };
+  const C = { S: cand('S'), A: cand('A'), T: cand('T'), B: cand('B') }, ref = prev || ctr;
+  const go = strict => { let best = null, bc = Infinity;
+    for (const b of C.B) for (const t of C.T) for (const a of C.A) for (const s of C.S){
+      if (!(s > a && a > t && t > b)) continue;
+      if (strict && (s - a > 12 || a - t > 12 || new Set([s, a, t, b].map(m => mod(m - pc, 12))).size < 3)) continue;
+      const vv = { S: s, A: a, T: t, B: b }; let c = 0; for (const p in vv){ c += Math.abs(vv[p] - ref[p]); if (prev) c += 0.3 * Math.abs(vv[p] - ctr[p]); }
+      if (c < bc){ bc = c; best = vv; } }
+    return best; };
+  return go(true) || go(false);
+}
+function chordCols(key, voicings, keys){
+  const me = vt().part;
+  return voicings.map((v, i) => ({ notes: ['S', 'A', 'T', 'B'].map(p => ({ m: v[p], st: staffOf(p), me: p === me, tag: p })), lyric: sylTxt(v[me], key, homeDo(key)), top: keys ? CH[keys[i]].n : '' }));
+}
+const others = v => ['S', 'A', 'T', 'B'].filter(p => p !== vt().part).map(p => v[p]);
+const CHORD_KEYS = ['I', 'IV', 'V', 'vi', 'ii'];
+act({ id: 'harm', title: 'Sing in harmony', icon: 'notes', color: '#1d4fb8', blurb: 'The choir sings a chord. You add your part and blend in. 30 chords per game.', mins: 20, steps: [
+  { title: 'Before we start', render(el){
+    el.innerHTML = `<div class="stack">${tips([['phones', 'Please use <b>headphones</b>. Then the microphone hears only you, not the choir sound.']])}<p class="lead">You sing <b>${vt().name}</b>. Choose a key for harmony practice:</p><select class="big" id="k">${KEYS.map((k, i) => `<option value="${i}" ${i === S.keyIdx ? 'selected' : ''}>${keyName(k)}</option>`).join('')}</select></div>`;
+    $('#k', el).onchange = e => { S.keyIdx = +e.target.value; save(); };
+  } },
+  { title: 'Listen to the choir', render(el){
+    const key = curKey(), me = vt().part; let ck = 'I', v = voiceChord(ck, key, null);
+    el.innerHTML = `<div class="stack"><p class="lead" id="ln"></p><div class="staffbox" id="sb"></div><div class="btnrow"><button class="btn big primary" id="a">${B('play', 'Whole choir')}</button><button class="btn big" id="b">${B('play', 'Choir without me')}</button><button class="btn big" id="c">${B('play', 'Only my note')}</button></div><div class="btnrow"><button class="btn" id="n">${B('redo', 'Another chord')}</button></div></div>`;
+    const draw = () => { $('#sb', el).innerHTML = staff(key, chordCols(key, [v], [ck]), { colW: 110 }); $('#ln', el).innerHTML = `Four parts sing together: S A T B. <b>Your note is orange</b>. Its name is <b>${sylTxt(v[me], key, homeDo(key))}</b>.`; };
+    draw();
+    $('#a', el).onclick = () => { A(); stopSound(); chord(Object.values(v), ctx.currentTime + 0.05, 2.5); };
+    $('#b', el).onclick = () => { A(); stopSound(); chord(others(v), ctx.currentTime + 0.05, 2.5); };
+    $('#c', el).onclick = () => seq([v[me]], 1.6);
+    $('#n', el).onclick = () => { ck = rnd(CHORD_KEYS.filter(x => x !== ck)); v = voiceChord(ck, key, null); draw(); A(); stopSound(); chord(Object.values(v), ctx.currentTime + 0.05, 2.2); };
+  } },
+  drill({ title: 'Find your note', intro: 'A chord is chosen. Sing <b>your</b> note from it, alone first.', gen: () => { const k = curKey(); return { key: k, notes: [voiceChord(rnd(CHORD_KEYS), k, null)[vt().part]] }; } }),
+  { title: 'Sing with the choir', render(el, api){
+    const key = curKey(), me = vt().part, hd = homeDo(key);
+    let round = 0, right = 0, ck, v, target, sa, run = null, take = null, scored = false;
+    el.innerHTML = `<div class="stack"><p class="lead">You hear your note, then the other three parts. <b>Sing your note and hold it</b> for 5 seconds. Make your voice melt into the chord.</p><div class="score"><span id="rd"></span><span id="rt" style="color:var(--gold)"></span></div><div class="miniprog"><div id="bar"></div></div><div class="staffbox" id="sb"></div><p class="say" id="say"></p><div class="meterbig"><div id="bm"></div></div><div class="btnrow"><button class="btn big sing" id="go">${B('mic', 'Start')}</button><button class="btn big" id="bl" disabled>${B('play', 'Hear my blend')}</button><button class="btn big" id="nx">${B('right', 'Next chord')}</button></div><div class="btnrow" id="self" hidden><button class="btn big good" id="y">${B('check', 'It blended')}</button><button class="btn big" id="n">${B('x', 'It stuck out')}</button></div>${youHTML()}</div>`;
+    const say = (t, c = '') => { const p = $('#say', el); p.innerHTML = t; p.className = 'say ' + c; };
+    const upd = () => { $('#rd', el).textContent = `Chord ${round} of ${ROUNDS}`; $('#rt', el).innerHTML = `${ic('star')} ${right} blended`; $('#bar', el).style.width = (100 * round / ROUNDS) + '%'; };
+    const newRound = auto => {
+      clearTimers(); stopSound(); run = null; take = null; $('#bl', el).disabled = true; $('#self', el).hidden = true; $('#bm', el).style.width = '0';
+      if (round >= ROUNDS){ say(`★ All ${ROUNDS} chords done! You blended ${right}.`, 'good'); fanfare(); confetti(); round = 0; right = 0; }
+      round++; scored = false; ck = rnd(CHORD_KEYS); v = voiceChord(ck, key, null); target = v[me];
+      $('#sb', el).innerHTML = staff(key, chordCols(key, [v], [ck]), { colW: 110, live: true }); sa = staffApi($('#sb', el), key, staffOf(me));
+      say(`${CH[ck].n}: your note is <b>${sylTxt(target, key, hd)}</b>. Press Start.`); upd();
+      if (auto) later(() => $('#go', el).click(), 900);
+    };
+    const finishScore = (ok) => { if (scored) return; scored = true; api.score(ok ? 1 : 0, 1); if (ok){ right++; upd(); } };
+    $('#go', el).onclick = async () => {
+      const mic = await micOn(); A(); stopSound(); clearTimers(); $('#bm', el).style.width = '0';
+      const t0 = ctx.currentTime + 0.1; tone(target, t0, 1.1, 0.22);
+      const s0 = t0 + 1.4; chord(others(v), s0, 5);
+      $('#go', el).classList.add('live');
+      if (mic){ startRec(); run = { s0, e0: s0 + 5, f: 0, g: 0 }; say('Listen… now sing with the choir!'); }
+      else { say('Sing along now ♪'); later(() => { $('#self', el).hidden = false; say('Did your voice melt into the chord?'); $('#go', el).classList.remove('live'); }, 6600); }
+      later(async () => {
+        if (!run) return;
+        $('#go', el).classList.remove('live');
+        const pct = run.f ? Math.round(100 * run.g / run.f) : 0; run = null;
+        finishScore(pct >= 60);
+        say(`Blend: <b>${pct}%</b>. ${pct >= 70 ? '★ Beautiful blend!' : pct >= 40 ? '✓ Nearly! Lean into the chord.' : 'Try again. Sing softer and listen more.'}`, pct >= 40 ? 'good' : 'bad');
+        if (pct >= 70){ fanfare(); confetti(innerWidth / 2, innerHeight / 3, 90); kidReact(el, 'yay'); later(() => newRound(MIC.state === 'on'), 2600); } else if (pct >= 40) chime(); else { boop(); kidReact(el, 'oops'); }
+        take = await stopRec(); if (take){ $('#bl', el).disabled = false; take.s0 = s0 - recStart; }
+      }, 6700);
+    };
+    $('#y', el).onclick = () => { $('#self', el).hidden = true; say('★ Lovely!', 'good'); finishScore(true); chime(); confetti(); kidReact(el, 'yay'); later(() => newRound(false), 1600); };
+    $('#n', el).onclick = () => { $('#self', el).hidden = true; say('Try again: sing softer and listen to the others.', 'bad'); finishScore(false); };
+    $('#bl', el).onclick = () => { if (!take) return; A(); stopSound(); const t = ctx.currentTime + 0.1; playBuf(take, t, take.s0); chord(others(v), t, 5); };
+    $('#nx', el).onclick = () => { finishScore(false); newRound(false); };
+    api.onPitch(m => {
+      const ok = m != null && Math.abs(centsTo(m, target)) <= S.tol;
+      sa && sa.live(m, ok); youUpdate(el, m, target, key, hd);
+      if (run && ctx.currentTime >= run.s0 && ctx.currentTime < run.e0){ run.f++; if (ok) run.g++; $('#bm', el).style.width = Math.round(100 * run.g / Math.max(1, run.f)) + '%'; }
+    });
+    newRound(false);
+  } },
+  { title: 'Chord journey', render(el, api){
+    const key = curKey(), me = vt().part, hd = homeDo(key);
+    const PROGS = { 'I IV V I': 'Do – Fa – Sol – Do', 'I IV I V I': 'Do – Fa – Do – Sol – Do', 'I vi ii V I': 'Do – La – Re – Sol – Do', 'I V vi IV': 'Do – Sol – La – Fa', 'I vi IV V': 'Do – La – Fa – Sol', 'I ii V I': 'Do – Re – Sol – Do' };
+    let pk = 'I IV V I', keys, vs, sa;
+    el.innerHTML = `<div class="stack"><p class="lead">Now the chords change. Your note changes too. Follow the orange notes from left to right. Each chord lasts 4 seconds.</p><select class="big" id="pg">${Object.entries(PROGS).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select><div class="staffbox" id="st"></div><p class="say" id="say">Press Listen first, then Sing.</p><div class="btnrow"><button class="btn big" id="ls">${B('play', 'Listen')}</button><button class="btn big sing" id="go">${B('mic', 'Sing')}</button><button class="btn big" id="bl" disabled>${B('play', 'Hear my blend')}</button></div><div class="chordres" id="res"></div>${youHTML()}</div>`;
+    const build = () => { keys = pk.split(' '); vs = []; let p = null; keys.forEach(k => { p = voiceChord(k, key, p); vs.push(p); }); $('#st', el).innerHTML = staff(key, chordCols(key, vs, keys), { colW: 96, live: true }); sa = staffApi($('#st', el), key, staffOf(me)); $('#res', el).innerHTML = ''; };
+    build();
+    $('#pg', el).onchange = e => { pk = e.target.value; build(); };
+    $('#ls', el).onclick = () => { A(); stopSound(); clearTimers(); let t = ctx.currentTime + 0.05; const t0 = t; vs.forEach((v, i) => { chord(Object.values(v), t, 1.8); later(() => { sa.clear(); sa.col(i, 'cur'); }, (t - t0) * 1000 + 50); t += 2; }); later(() => sa.clear(), (t - t0) * 1000); };
+    let run = null, take = null;
+    const say = (t, c = '') => { const p = $('#say', el); p.innerHTML = t; p.className = 'say ' + c; };
+    $('#go', el).onclick = async () => {
+      const mic = await micOn(); A(); stopSound(); clearTimers(); sa.clear();
+      const t0 = ctx.currentTime + 0.1; tone(vs[0][me], t0, 1.2, 0.22);
+      const segs = vs.map((v, i) => ({ i, s: t0 + 1.5 + i * 4, e: t0 + 1.5 + (i + 1) * 4, target: v[me], f: 0, g: 0 }));
+      segs.forEach(sg => chord(others(vs[sg.i]), sg.s, 4));
+      if (!mic) segs.forEach(sg => later(() => { sa.clear(); sa.col(sg.i, 'cur'); }, (sg.s - ctx.currentTime) * 1000));
+      run = { segs, mic }; if (mic) startRec(); $('#go', el).classList.add('live');
+      say(mic ? 'Here is your first note… then sing along!' : 'Sing along with the choir ♪');
+      later(async () => {
+        const r = run; run = null; sa.clear(); $('#go', el).classList.remove('live');
+        if (!r.mic){ say('Well done! Press Listen to compare, then try again.', 'good'); chime(); kidReact(el, 'yay'); return; }
+        $('#res', el).innerHTML = r.segs.map((sg, k) => { const p = sg.f ? Math.round(100 * sg.g / sg.f) : 0; return `<div style="animation-delay:${k * 0.12}s"><span>${sg.i + 1}. ${CH[keys[sg.i]].n} · ${sylTxt(sg.target, key, hd)}</span><span style="color:${p >= 70 ? 'var(--good)' : p >= 40 ? 'var(--gold)' : 'var(--bad)'}">${p >= 70 ? '★' : p >= 40 ? '✓' : '✗'} ${p}%</span></div>`; }).join('');
+        const all = r.segs.reduce((a, sg) => [a[0] + sg.g, a[1] + sg.f], [0, 0]); const pct = all[1] ? Math.round(100 * all[0] / all[1]) : 0;
+        api.score(pct, 100);
+        say(`Blend score: <b>${pct}%</b>`, pct >= 40 ? 'good' : 'bad');
+        if (pct >= 70){ fanfare(); confetti(innerWidth / 2, innerHeight / 3, 120); kidReact(el, 'yay'); } else if (pct >= 40) chime(); else { boop(); kidReact(el, 'oops'); }
+        take = await stopRec(); if (take){ take.s0 = segs[0].s - recStart; take.segs = segs.map(sg => sg.s - segs[0].s); $('#bl', el).disabled = false; }
+      }, (segs[segs.length - 1].e - ctx.currentTime + 0.2) * 1000);
+    };
+    $('#bl', el).onclick = () => { if (!take) return; A(); stopSound(); const t = ctx.currentTime + 0.1; playBuf(take, t, take.s0); take.segs.forEach((o, i) => chord(others(vs[i]), t + o, 4)); };
+    let lastSeg = null;
+    api.onPitch(m => {
+      const now = ctx ? ctx.currentTime : 0; const sg = run ? run.segs.find(x => now >= x.s && now < x.e) : null;
+      const target = sg ? sg.target : vs[0][me];
+      const ok = m != null && Math.abs(centsTo(m, target)) <= S.tol;
+      sa.live(m, ok); youUpdate(el, m, target, key, hd);
+      if (run && run.mic && sg !== lastSeg){ sa.clear(); if (sg) sa.col(sg.i, 'cur'); lastSeg = sg; }
+      if (sg){ sg.f++; if (ok) sg.g++; }
+    });
+  } },
+] });
+
+/* ===== App shell: landing, journey, wizard, celebration ===== */
+const app = $('#app');
+let cleanups = [];
+function teardown(){ $('#vtChip').hidden = false; cleanups.forEach(f => { try { f(); } catch(e){} }); cleanups = []; clearTimers(); stopSound(); if (recorder && recorder.state !== 'inactive') try { recorder.stop(); } catch(e){} const m = $('.modal'); if (m) m.remove(); }
+function applySize(){ document.documentElement.style.fontSize = (innerWidth <= 640 ? [17, 19, 21] : [20, 23, 26])[S.size || 0] + 'px'; }
+addEventListener('resize', applySize);
+function updChips(){ $('#vtChip').innerHTML = `${kidSVG(avatar(), '', true).replace('class="kid face ', 'style="width:26px;height:26px;border-radius:50%;background:#2a3566" class="kid face ')}<span>${kidName(avatar())}${S.vt ? ' · ' + S.vt : ''}</span>`; micChip(); }
+const starsHTML = (n, cls = 'minis') => `<span class="${cls}">${[1, 2, 3].map(i => `<span class="${i <= n ? 'on' : ''}">${ic('star')}</span>`).join('')}</span>`;
+const aicon = a => `<span class="aicon" style="background:linear-gradient(135deg, ${a.color}, color-mix(in srgb, ${a.color} 70%, #000))">${ic(a.icon)}</span>`;
+const ORDER = { back: ['T1', 'T2', 'B1', 'B2'], front: ['S1', 'S2', 'A1', 'A2'] };
+
+function landing(){
+  teardown(); $('#foot').hidden = true;
+  $('#vtChip').hidden = true;
+  const singer = id => `<button class="singer" data-k="${id}" aria-label="Hear ${KIDS[id].name}, ${VT[id].name}">${kidSVG(id)}<span class="tag">${KIDS[id].name} · <b>${id}</b></span></button>`;
+  app.innerHTML = `<section class="landing">
+    <div class="lhero">
+      <div class="ltext">
+        <span class="eyebrow">For every choir member · young and old · S A T B</span>
+        <h1 class="ltitle">Sing in tune. <span>Read the staff.</span> Blend as one choir.</h1>
+        <p>A friendly voice trainer with solfa: do re mi fa sol la si do. Find your voice type, train your ear, and sing with a virtual choir.</p>
+        <div class="lctas"><button class="btn huge sing" id="start">${B('play', 'Get started')}</button><button class="btn big ghostw" id="hear">${B('notes', 'Hear the choir')}</button></div>
+      </div>
+      <div class="stage">
+        <div class="row back">${ORDER.back.map(singer).join('')}</div>
+        <div class="row front">${ORDER.front.map(singer).join('')}</div>
+      </div>
+      <p class="tapline">Tap a singer to hear their voice</p>
+    </div>
+    ${FRAMED ? `<div class="notice">This shared page can’t use the microphone, so you’ll check yourself by ear. <span id="dlwrap"></span></div>` : ''}
+    <h2 class="secttl">What you can do</h2>
+    <div class="feat">
+      <div class="card"><span class="fi" style="background:#7a4fd0">${ic('search')}</span><h3>Find your voice type</h3><p>Sing your lowest and highest notes. Discover if you are Soprano 1 or 2, Alto 1 or 2, Tenor 1 or 2, Baritone or Bass.</p></div>
+      <div class="card"><span class="fi" style="background:#d6336c">${ic('target')}</span><h3>Sing in tune</h3><p>Hear a note, sing it back, and see right away if it matches. 30 rounds per level.</p></div>
+      <div class="card"><span class="fi" style="background:#0f8a6a">${ic('staff')}</span><h3>Read the grand staff</h3><p>Treble clef for sopranos and altos, bass clef for tenors and basses. Every key, with sharps and flats.</p></div>
+      <div class="card"><span class="fi" style="background:#1d4fb8">${ic('notes')}</span><h3>Blend in harmony</h3><p>The choir sings a chord. You fill in your part and get a blend score.</p></div>
+    </div>
+    <h2 class="secttl">How it works</h2>
+    <div class="how">
+      <div><b class="n">1</b><span><b>Get ready.</b> Turn on the sound and the microphone. Use headphones if you have them.</span></div>
+      <div><b class="n">2</b><span><b>Follow the journey.</b> Warm up, breathe, find your voice, then sing, one big step at a time.</span></div>
+      <div><b class="n">3</b><span><b>Earn stars.</b> Your choir buddy cheers when you hit the note.</span></div>
+    </div>
+    <div class="btnrow"><button class="btn huge sing" id="start2">${B('play', 'Get started')}</button></div>
+  </section>`;
+  const go = () => { A(); setup(); };
+  $('#start').onclick = go; $('#start2').onclick = go;
+  $$('.singer').forEach(b => b.onclick = () => {
+    const id = b.dataset.k, v = VT[id], m = Math.round((v.lo + v.hi) / 2) - 2, k = $('.kid', b);
+    A(); stopSound(); let t = ctx.currentTime + 0.05; [0, 4, 7].forEach(i => { tone(m + i, t, 0.45, 0.2); t += 0.4; });
+    k.classList.add('singing'); kidReact(k, 'yay'); setTimeout(() => k.classList.remove('singing'), 1300);
+  });
+  $('#hear').onclick = () => {
+    A(); stopSound(); const key = KEYS[0]; let t = ctx.currentTime + 0.05; const t0 = t;
+    ['I', 'IV', 'V', 'I'].forEach((ck, i) => { const v = voiceChord(ck, key, null); chord(Object.values(v), t, i === 3 ? 2.2 : 1.1, 0.11); t += 1.2; });
+    $$('.singer .kid').forEach(k => k.classList.add('singing'));
+    later(() => { $$('.singer .kid').forEach(k => { k.classList.remove('singing'); kidReact(k, 'yay'); }); confetti(innerWidth / 2, innerHeight / 3, 60); }, (t - t0 + 1) * 1000);
+  };
+  const idle = () => { const ks = $$('.singer .kid'); if (!ks.length) return; const k = rnd(ks); k.classList.add('singing'); later(() => k.classList.remove('singing'), 900); later(idle, 700 + Math.random() * 700); };
+  if (!CALM) later(idle, 600);
+  offerDownload();
+  window.scrollTo(0, 0);
+}
+
+function setup(){
+  teardown(); $('#foot').hidden = true;
+  if (!S.avatar) S.avatar = avatar();
+  const ids = Object.keys(KIDS);
+  app.innerHTML = `<section class="setup">
+    <div class="sethead"><h2>Set up your practice</h2><p class="lead">Choose who you will sing as, tell us your voice part, and make the app comfortable for your eyes and ears.</p></div>
+    <div class="card stack setcard">
+      <h3><span class="stepn">1</span>Choose your character</h3>
+      <div class="charpick">
+        <div class="preview" id="pv"></div>
+        <div class="chargrid">${ids.map(id => `<button class="charbtn" data-k="${id}" aria-pressed="${S.avatar === id}">${kidSVG(id)}<b>${KIDS[id].name}</b><small>${KIDS[id].age}</small></button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="card stack setcard">
+      <h3><span class="stepn">2</span>Your voice part</h3>
+      <p class="muted">Not sure? Choose “Find it for me” and the journey will test your voice.</p>
+      <div class="partgrid">
+        <button class="partbtn find" data-v="" aria-pressed="${!S.vt}">${ic('search')}<span><b>Find it for me</b><small> · test my voice in the journey</small></span></button>
+        ${Object.entries(VT).map(([k, v]) => `<button class="partbtn" data-v="${k}" aria-pressed="${S.vt === k}"><b>${v.name}</b><small>${k} · ${v.part === 'S' || v.part === 'A' ? 'treble clef' : 'bass clef'}</small></button>`).join('')}
+      </div>
+    </div>
+    <div class="card stack setcard">
+      <h3><span class="stepn">3</span>Make it comfortable</h3>
+      <div class="setrow"><div class="lbl"><b>Text size <span class="aa" id="aa">Aa</span></b><small>Bigger is easier to read.</small></div><div class="seg" id="hs"><button data-v="0">Normal</button><button data-v="1">Bigger</button><button data-v="2">Biggest</button></div></div>
+      <div class="setrow"><div class="lbl"><b>How strict is the checking?</b><small id="tolx"></small></div><div class="seg" id="ht"><button data-v="45">Easy</button><button data-v="30">Normal</button><button data-v="18">Strict</button></div></div>
+      <div class="setrow"><div class="lbl"><b>Microphone sensitivity</b><small>Use “High” for a soft voice or an older phone.</small></div><div class="seg" id="hg"><button data-v="1">Low</button><button data-v="2">Normal</button><button data-v="3">High</button></div></div>
+    </div>
+    <div class="btnrow"><button class="btn huge sing" id="cont">${B('right', 'Continue to my journey')}</button></div>
+  </section>`;
+  const TOLX = { 45: 'Close is good enough. Best for beginners.', 30: 'A good balance for most singers.', 18: 'Very exact. For confident singers.' };
+  const pv = () => { const id = S.avatar; $('#pv').innerHTML = `${kidSVG(id, 'singing')}<b>${KIDS[id].name}</b><span>${KIDS[id].age}</span>`; const k = $('#pv .kid'); kidReact(k, 'yay'); later(() => k.classList.remove('singing'), 1600); };
+  pv();
+  const mark = () => {
+    $$('#hs button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === (S.size || 0))));
+    $$('#ht button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === S.tol)));
+    $$('#hg button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === S.gain)));
+    $('#tolx').textContent = TOLX[S.tol] || TOLX[30];
+  };
+  $$('.charbtn').forEach(b => b.onclick = () => {
+    S.avatar = b.dataset.k; save(); updChips();
+    $$('.charbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); pv();
+    const v = VT[S.vt] || VT[b.dataset.k]; A(); stopSound(); const m = Math.round((v.lo + v.hi) / 2) - 2; let t = ctx.currentTime + 0.05; [0, 4, 7].forEach(i => { tone(m + i, t, 0.4, 0.18); t += 0.32; });
+  });
+  $$('.partbtn').forEach(b => b.onclick = () => { S.vt = b.dataset.v || null; save(); updChips(); $$('.partbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); if (S.vt){ const v = VT[S.vt]; seq([v.lo + 2, Math.round((v.lo + v.hi) / 2), v.hi - 2], 0.45, 0.18); } else chime(); });
+  $('#hs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.size = +b.dataset.v; save(); applySize(); mark(); };
+  $('#ht').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tol = +b.dataset.v; save(); mark(); };
+  $('#hg').onclick = e => { const b = e.target.closest('button'); if (!b) return; setGain(+b.dataset.v); mark(); };
+  mark();
+  $('#cont').onclick = () => { save(); journey(); };
+  window.scrollTo(0, 0);
+}
+
+function journey(){
+  teardown(); $('#foot').hidden = true;
+  const nDone = ACTS.filter(a => S.done[a.id]).length;
+  const totalStars = Object.values(S.stars).reduce((a, b) => a + b, 0);
+  const nextA = ACTS.find(a => !S.done[a.id]);
+  const id = avatar();
+  const sayings = ['Let’s sing!', 'Ready to warm up?', 'Your voice is a gift ♪', 'One step at a time!', 'Practice makes music ♫'];
+  app.innerHTML = `
+    <section class="hero">
+      <div>
+        <h2>Your singing journey</h2>
+        <p class="lead">${S.vt ? `You sing <b>${VT[S.vt].name}</b> as <b>${kidName(avatar())}</b>.` : `You sing as <b>${kidName(avatar())}</b>. In step 4 you find your voice type.`} Tap a step to begin.</p>
+        <div class="stats">
+          <div class="stat star">${ic('star')}<b>${totalStars}</b> stars</div>
+          <div class="stat done">${ic('check')}<b>${nDone}/${ACTS.length}</b> steps done</div>
+          <button class="btn" id="toSetup">${B('spark', 'Character & settings')}</button>
+        </div>
+        <div class="prog"><div id="pg"></div></div>
+      </div>
+      <div class="hero-kid"><div class="bubble">${nDone === ACTS.length ? 'You did everything! ★' : rnd(sayings)}</div>${kidSVG(id, 'singing')}</div>
+    </section>
+    <div class="road">${ACTS.map((a, i) => { const dn = !!S.done[a.id], nx = nextA === a; return `<div class="stop ${dn ? 'done' : ''} ${nx ? 'next' : ''}" style="animation-delay:${(i * 0.06).toFixed(2)}s"><span class="node">${dn ? ic('check') : i + 1}</span><button class="stepcard" data-a="${a.id}">${aicon(a)}<span><h3>${a.title}</h3><p>${a.blurb} · about ${a.mins} min</p>${starsHTML(S.stars[a.id] || 0)}</span><span class="go">${dn ? `${ic('redo')} Again` : nx ? `${ic('play')} Start here` : `Start ${ic('right')}`}</span></button></div>`; }).join('')}</div>
+    <div class="btnrow" style="margin-top:18px"><button class="btn" id="reset">${B('redo', 'Clear my stars')}</button></div>`;
+  setTimeout(() => { const p = $('#pg'); if (p) p.style.width = (100 * nDone / ACTS.length) + '%'; }, 150);
+  $('#reset').onclick = () => { S.done = {}; S.stars = {}; save(); journey(); };
+  $('#toSetup').onclick = () => setup();
+  $$('.stepcard').forEach(b => b.onclick = () => runAct(ACTS.find(a => a.id === b.dataset.a)));
+  window.scrollTo(0, 0);
+}
+
+function finishAct(a, sc){
+  const ratio = sc.t ? sc.h / sc.t : 1;
+  const stars = ratio >= 0.8 ? 3 : ratio >= 0.5 ? 2 : 1;
+  S.done[a.id] = true; S.stars[a.id] = Math.max(S.stars[a.id] || 0, stars); save();
+  const idx = ACTS.indexOf(a), nxt = ACTS.slice(idx + 1).find(x => !S.done[x.id]) || ACTS.find(x => !S.done[x.id]);
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="card">${kidSVG(avatar(), 'yay singing')}<h2 style="font-size:1.7rem">${a.title}: done!</h2>${starsHTML(stars, 'bigstars')}<p class="lead">${stars === 3 ? 'Amazing work! Full marks.' : stars === 2 ? 'Well done! Practise again for 3 stars.' : 'Good effort! Every practice makes you better.'}</p><div class="btnrow">${nxt ? `<button class="btn big primary" id="mn">${B('right', 'Next: ' + nxt.title)}</button>` : ''}<button class="btn big" id="mh">${B('map', 'My journey')}</button></div></div>`;
+  document.body.appendChild(m);
+  const k = $('.kid', m); const iv = setInterval(() => { if (document.body.contains(k)) kidReact(k, 'yay'); else clearInterval(iv); }, 1600);
+  fanfare(); confetti(innerWidth / 2, innerHeight / 3, 160, 1.2); setTimeout(() => confetti(innerWidth * 0.25, innerHeight / 2, 60), 400); setTimeout(() => confetti(innerWidth * 0.75, innerHeight / 2, 60), 700);
+  $('#mh', m).onclick = journey;
+  if (nxt) $('#mn', m).onclick = () => runAct(nxt);
+}
+
+function runAct(a, start = 0){
+  let i = start; const sc = { h: 0, t: 0 };
+  const show = () => {
+    teardown();
+    const st = a.steps[i];
+    app.innerHTML = `<section class="wizhead"><div class="top"><button class="btn" id="toHome">${B('map', 'My journey')}</button><span class="stepnum">Step ${i + 1} of ${a.steps.length}</span></div><h2>${aicon(a)}${a.title}</h2><div class="dots">${a.steps.map((_, k) => `<span class="${k < i ? 'past' : k === i ? 'now' : ''}"></span>`).join('')}</div></section><section class="card stack stepcardx"><h3 class="steptitle">${st.title}</h3><div id="stepBody"></div><p class="notice green" id="stepHint" hidden></p></section>`;
+    $('#toHome').onclick = journey;
+    const subs = [];
+    const api = {
+      onPitch(fn){ MIC.subs.add(fn); subs.push(fn); },
+      resetPitch(){ subs.splice(0).forEach(f => MIC.subs.delete(f)); },
+      hint(t){ const h = $('#stepHint'); if (h){ h.textContent = t; h.hidden = false; } },
+      score(h, t){ sc.h += h; sc.t += t; },
+    };
+    cleanups.push(() => subs.forEach(f => MIC.subs.delete(f)));
+    st.render($('#stepBody'), api);
+    $('#foot').hidden = false;
+    $('#backBtn').innerHTML = i === 0 ? B('map', 'Journey') : B('left', 'Back');
+    $('#nextBtn').innerHTML = i === a.steps.length - 1 ? B('check', 'Finish') : `<span>Next</span>${ic('right')}`;
+    $('#backBtn').onclick = () => { if (i === 0) journey(); else { i--; show(); } };
+    $('#nextBtn').onclick = () => { if (i === a.steps.length - 1){ teardown(); $('#foot').hidden = true; finishAct(a, sc); } else { i++; show(); } };
+    window.scrollTo(0, 0);
+  };
+  show();
+}
+
+async function offerDownload(){
+  const wrap = $('#dlwrap'); if (!wrap || !window.__host || !window.__host.use) return;
+  let dl = null; try { dl = await window.__host.use('downloads'); } catch(e){}
+  if (!dl || !document.body.contains(wrap)) return;
+  wrap.innerHTML = `For automatic checking with the microphone: <button class="btn" id="dlb" style="margin-top:8px">${B('down', 'Get the full version')}</button> then open the file in Chrome, Edge or Safari.`;
+  $('#dlb').onclick = async () => {
+    let html = null;
+    try { const r = await fetch('index.html'); if (r.ok) html = await r.text(); } catch(e){}
+    if (!html || !html.includes('Choir Voice Trainer')) html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    try { await dl.save({ filename: 'choir-voice-trainer.html', data: html }); } catch(e){}
+  };
+}
+
+$('#logo').innerHTML = logoSVG();
+$('#homeBtn').onclick = landing;
+$('#vtChip').onclick = () => journey();
+$('#micChip').onclick = () => micOn();
+initBg();
+applySize(); updChips(); landing();
+})();
+</script>
+<footer class="ui-foot">
+  <div class="ui-foot-in">
+    <a class="ui-foot-brand" href="https://useful-indeed.com" title="More small, free tools on useful-indeed"><img src="useful-indeed/logo.svg" alt="useful-indeed logo" width="22" height="22"><span>© <span data-ui-year>2026</span> <b>useful-indeed</b></span></a>
+    <nav class="ui-foot-nav" aria-label="Site"><a href="about.html">About</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a></nav>
+    <button type="button" class="ui-foot-ver" data-ui-ver>v1.0 · Version log</button>
+  </div>
+</footer>
+<script src="useful-indeed/badge.js" defer></script>
+</body>
+</html>
