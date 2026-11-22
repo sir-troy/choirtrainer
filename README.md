@@ -4,7 +4,7 @@ Sing in tune, find your voice and read the grand staff.
 
 **Live:** https://choirtrainer.useful-indeed.com
 
-Choir Voice Trainer is a friendly practice partner for choir singers. It helps you find your voice type, warm up and breathe properly, sing notes in tune with live feedback from your microphone, read the grand staff using solfa (do-re-mi) and blend your part in S A T B harmony. Lessons are short steps you can do at home, and your progress is kept as a singing journey with stars.
+Choir Voice Trainer is a friendly practice partner for choir singers. A detailed test finds your voice type from your speaking voice and your lowest and highest notes, and notices when your voice switches to falsetto or strains. Then you warm up, breathe, sing notes in tune with live feedback, learn the Curwen hand signs, read the grand staff in solfa, blend in four-part harmony, and sing along with 30 songs or your own MIDI file. Finish every step to earn a certificate.
 
 ## How to use
 
