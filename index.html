@@ -5,10 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Choir Voice Trainer</title>
 <meta name="description" content="Choir Voice Trainer — find your voice type, sing in tune with live pitch feedback, read the grand staff and practise SATB parts. Free, runs in your browser.">
-<link rel="canonical" href="https://choirtrainer.useful-indeed.com/">
+<meta property="og:site_name" content="useful-indeed">
 <meta property="og:title" content="Choir Voice Trainer">
 <meta property="og:description" content="Find your voice type, sing in tune and read the grand staff. Free, runs in your browser.">
 <meta property="og:url" content="https://choirtrainer.useful-indeed.com/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://choirtrainer.useful-indeed.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9QZY61DZ0G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-9QZY61DZ0G');</script>
+<link rel="canonical" href="https://choirtrainer.useful-indeed.com/">
 <link rel="stylesheet" href="useful-indeed/footer.css">
 <script src="version-log.js"></script>
 <link rel="icon" type="image/svg+xml" href="logo.svg">
@@ -576,6 +584,24 @@ svg.staff .trail.ok{stroke:var(--pgood)}
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4427223480429053"
      crossorigin="anonymous"></script>
+<style>
+.guide{margin:48px 0 0;padding:30px 30px 34px;background:color-mix(in srgb,var(--card) 82%,transparent);border:2px solid var(--line);border-radius:22px;font-family:var(--font);line-height:1.6}
+.guide[hidden]{display:none}
+.guide h2{font-family:var(--fun);font-size:1.5rem;line-height:1.25;margin:0 0 12px}
+.guide h3{font-family:var(--fun);font-size:1.1rem;margin:28px 0 10px;color:var(--gold)}
+.guide p,.guide li,.guide td{color:var(--muted);font-size:.9rem}
+.guide b{color:var(--ink)}
+.guide ol,.guide ul{padding-left:1.3em;margin:0}
+.guide li{margin:5px 0}
+.guide .vtt{width:100%;border-collapse:collapse;margin-top:6px}
+.guide .vtt th{text-align:left;font-size:.8rem;color:var(--ink);padding:8px 10px;border-bottom:2px solid var(--line)}
+.guide .vtt td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.guide .vtt td:first-child{color:var(--ink);white-space:nowrap}
+.guide details{background:var(--bg2);border:2px solid var(--line);border-radius:14px;padding:12px 16px;margin:8px 0}
+.guide summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:.95rem}
+.guide details p{margin:8px 0 0}
+@media (max-width:640px){.guide{padding:22px 18px}.guide .vtt td:last-child,.guide .vtt th:last-child{display:none}}
+</style>
 </head>
 <body>
 <canvas id="bgfx" aria-hidden="true"></canvas>
@@ -592,6 +618,51 @@ svg.staff .trail.ok{stroke:var(--pgood)}
     </div>
   </header>
   <main id="app"></main>
+  <section class="guide" id="guide" aria-labelledby="guideTitle">
+    <h2 id="guideTitle">Free online voice trainer for choir singers</h2>
+    <p>Choir Voice Trainer helps you find your voice type, sing notes in tune and read music in solfa (do re mi fa sol la si do). It listens through your microphone and shows a live pitch line, so you can see when you are sharp, flat or right on the note. It is free, needs no sign-up and runs in your browser.</p>
+
+    <h3>How to practise</h3>
+    <ol>
+      <li><b>Find your voice type.</b> Take the voice test, or pick a type if you already know it.</li>
+      <li><b>Turn on the microphone</b> and put on headphones, so the trainer hears only your voice.</li>
+      <li><b>Warm up and breathe.</b> Short exercises loosen your voice before you sing higher or lower.</li>
+      <li><b>Sing notes in tune.</b> Match each note and try to keep the pitch line in the green.</li>
+      <li><b>Read and blend.</b> Learn the hand signs, read the grand staff, then sing your part in four-part harmony or with a song.</li>
+    </ol>
+
+    <h3>The eight choir voice types</h3>
+    <p>The trainer uses the usual choir parts, Soprano, Alto, Tenor and Bass, each split into a higher and a lower part. These are the ranges it uses:</p>
+    <table class="vtt">
+      <thead><tr><th>Voice type</th><th>Range</th><th>Sound</th></tr></thead>
+      <tbody>
+        <tr><td>First Soprano (S1)</td><td>E4 – A5</td><td>Highest voice, often sings the tune</td></tr>
+        <tr><td>Second Soprano (S2)</td><td>C4 – F5</td><td>High, a little lower and warmer</td></tr>
+        <tr><td>First Alto (A1)</td><td>A3 – D5</td><td>Middle-low harmony under the sopranos</td></tr>
+        <tr><td>Second Alto (A2)</td><td>F3 – B4</td><td>Lowest women's voice, rich and deep</td></tr>
+        <tr><td>First Tenor (T1)</td><td>D3 – A4</td><td>Highest men's voice, bright and ringing</td></tr>
+        <tr><td>Second Tenor (T2)</td><td>B2 – F4</td><td>Between tenor and baritone</td></tr>
+        <tr><td>Baritone (B1)</td><td>A2 – E4</td><td>Middle men's voice, warm and strong</td></tr>
+        <tr><td>Second Bass (B2)</td><td>E2 – C4</td><td>Lowest voice, the choir's foundation</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Tips for singing in tune</h3>
+    <ul>
+      <li>Practise a little every day. Ten to fifteen minutes is better than one long session a week.</li>
+      <li>Stand or sit tall and breathe low, so your belly moves out when you breathe in.</li>
+      <li>Hear the note in your head before you sing it.</li>
+      <li>Start softly. Loud singing hides small pitch mistakes.</li>
+      <li>Stop if your throat hurts, and drink water.</li>
+    </ul>
+
+    <h3>Frequently asked questions</h3>
+    <details><summary>What is solfa?</summary><p>Solfa gives each note of the scale a syllable: do re mi fa sol la si do. Choirs use it to learn melodies and harmony quickly, even without reading every note.</p></details>
+    <details><summary>What are Curwen hand signs?</summary><p>They are a hand shape for each solfa syllable. Showing the sign while you sing helps you feel how high or low each note sits.</p></details>
+    <details><summary>Can our whole choir use it?</summary><p>Yes. Each singer can practise their own part at home on their own device, then bring it to rehearsal.</p></details>
+    <details><summary>Does it work on a phone?</summary><p>Yes. Use a recent version of Chrome or Safari and allow the microphone. Earphones with a built-in mic give the best results.</p></details>
+    <details><summary>Is it free?</summary><p>Yes. Every step, the songs and the certificate are free, with no account needed.</p></details>
+  </section>
 </div>
 <div class="wizfoot" id="foot" hidden><div class="in">
   <button class="btn big" id="backBtn">Back</button>
@@ -2656,7 +2727,7 @@ act({ id: 'songs', title: 'Sing a song', icon: 'disc', color: '#c2410c', blurb: 
 /* ===== App shell: landing, journey, wizard, celebration ===== */
 const app = $('#app');
 let cleanups = [];
-function teardown(){ $('#vtChip').hidden = false; cleanups.forEach(f => { try { f(); } catch(e){} }); cleanups = []; clearTimers(); stopSound(); if (recorder && recorder.state !== 'inactive') try { recorder.stop(); } catch(e){} const m = $('.modal'); if (m) m.remove(); }
+function teardown(){ $('#vtChip').hidden = false; $('#guide').hidden = true; cleanups.forEach(f => { try { f(); } catch(e){} }); cleanups = []; clearTimers(); stopSound(); if (recorder && recorder.state !== 'inactive') try { recorder.stop(); } catch(e){} const m = $('.modal'); if (m) m.remove(); }
 function applySize(){ document.documentElement.style.fontSize = (innerWidth <= 640 ? [17, 19, 21] : [20, 23, 26])[S.size || 0] + 'px'; }
 addEventListener('resize', applySize);
 function updChips(){ $('#vtChip').innerHTML = `${kidSVG(avatar(), '', true).replace('class="kid face ', 'style="width:26px;height:26px;border-radius:50%;background:#2a3566" class="kid face ')}<span>${kidName(avatar())}${S.vt ? ' · ' + S.vt : ''}</span>`; micChip(); }
@@ -2672,7 +2743,7 @@ function phonesTip(then){ // shown when someone presses Get started
   setTimeout(() => $('#pok', m) && $('#pok', m).focus(), 50);
 }
 function landing(){
-  teardown(); $('#foot').hidden = true; bgmWant(true);
+  teardown(); $('#foot').hidden = true; bgmWant(true); $('#guide').hidden = false;
   $('#vtChip').hidden = true;
   const singer = id => `<button class="singer" data-k="${id}" aria-label="Hear ${KIDS[id].name}, ${VT[id].name}">${kidSVG(id)}<span class="tag">${KIDS[id].name} · <b>${id}</b></span></button>`;
   app.innerHTML = `<section class="landing">
